@@ -1,13 +1,68 @@
-# NotebookLM Handoff Playbook
+# notebooklm-research
 
-> Claude × NotebookLM 协作 SOP · 把"扫源 + 综合"外包给 NotebookLM · 把"判断 + 应用 + 核对"留给 Claude · 防幻觉 CI 硬骨架 + Tier A/B/C 分级核对
+> A portable Claude × NotebookLM deep-research skill · 4-stage workflow + anti-hallucination guardrails · works in Claude Code, Codex CLI, Anthropic Agents SDK, Hermes
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.1-blue)](./CHANGELOG.md)
+[![Skill version](https://img.shields.io/badge/skill-v2.1-blue)](./CHANGELOG.md)
 
-## Quickstart · 301 字符 Magic Prompt
+## Install · one line
 
-把下面这段粘到 NotebookLM 的 **Notebook Settings → Custom Instructions**（永久预设），任何 deep research 任务的输出都会自带 inline citation + 事实/观点/推论标签 + 三档置信度 + 自检 section：
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/wjameswen888/notebooklm-research/main/install.sh)
+```
+
+The installer detects AI host paths on your machine and symlinks the skill into each:
+
+- `~/.claude/skills/` — Claude Code CLI
+- `~/.agents/skills/` — Anthropic Agents SDK, OpenAI Codex CLI
+- `~/.codex/skills/` — Codex CLI alt path
+- `~/.hermes/skills/` — Hermes
+
+One source of truth at `~/.local/share/notebooklm-research/` · each host reads via symlink · `git pull` propagates everywhere.
+
+Dry-run / specific hosts / uninstall:
+
+```bash
+./install.sh --dry-run
+./install.sh --hosts claude,codex
+./install.sh --uninstall
+```
+
+Or clone manually:
+
+```bash
+git clone https://github.com/wjameswen888/notebooklm-research ~/.local/share/notebooklm-research
+~/.local/share/notebooklm-research/install.sh
+```
+
+## Use · one phrase
+
+In any AI host that supports skills:
+
+```
+/notebooklm-research "I want a deep research on <topic>"
+```
+
+The skill walks 4 stages:
+
+1. **Pick variant + scale** — A1 mapping / B1 narrative / C1 compliance / etc., scale S/M/L
+2. **Get the search outline** — paste into NotebookLM Deep Research mode, collect sources
+3. **Get the Custom Instructions** — paste into Notebook Settings (permanent preset)
+4. **Run NotebookLM, return with report** — skill runs Tier A/B/C verification and emits a structured verdict
+
+## What problems does this solve
+
+NotebookLM is a great research tool, but raw NotebookLM has 3 systemic failure modes:
+
+1. **Number hallucination** — source A's "3.1 million" becomes "3.5 million" in synthesis
+2. **Fact/opinion conflation** — author's opinion gets written as fact
+3. **Time-recency drift** — 2024's "currently" passes through as today's "currently"
+
+This skill engineers the defense into the prompt (301-char anti-hallucination hard-skeleton in NotebookLM's Custom Instructions) and into the SOP (Tier A/B/C tiered verification on the returned report).
+
+## Quick taste · the 301-char Magic Prompt
+
+Even without installing the skill, you can paste this into NotebookLM Notebook Settings → Custom Instructions for inline citations + fact/opinion tags + 3-tier confidence on every report:
 
 ```
 ## 来源与可核对性（硬要求）
@@ -21,57 +76,46 @@
    - 自检 section（4 块：未满足 CI / 未找到答案 / 引用频次 top 3 / 内部矛盾）
 ```
 
-效果差异：
+Effect:
 
-- **前**：NotebookLM 输出"目前业内主流方案是 XYZ"，引用糊成一团，事实和观点混杂，数字幻觉
-- **后**：每条 claim 带 `[#N]` · 标 `[事实]`/`[作者观点]`/`[推论]` · `截至 YYYY-MM-DD（[#N] 发布日期）` · `[高 多源 ≥ 2]`/`[中 单源]`/`[低 推论或冲突]`
+- **Before**: NotebookLM outputs "目前业内主流方案是 XYZ" with tangled references, facts and opinions blurred, numbers drift in synthesis
+- **After**: every claim carries `[#N]` · marked `[事实]`/`[作者观点]`/`[推论]` · dates anchored as `截至 YYYY-MM-DD（[#N] 发布日期）` · confidence tagged `[高 多源 ≥ 2]`/`[中 单源]`/`[低 推论或冲突]`
 
-完整 SOP 看 [PLAYBOOK.md](./PLAYBOOK.md)。
+The full skill workflow adds the other 3 stages (search outline → variant-specific CI → Tier A/B/C verification) on top.
 
-## 痛点
+## Repo structure
 
-NotebookLM 是好工具，但裸跑有 3 个系统性失真：
+```
+notebooklm-research/
+├── SKILL.md              ← the skill (Claude/Codex/Agents/Hermes all read this)
+├── install.sh            ← cross-host installer
+├── README.md             ← you are here
+├── PLAYBOOK.md           ← full v2.1 spec (deep-dive reference · 624 lines)
+├── CHANGELOG.md          ← version history (v1 → v2.0 → v2.1 → 三轮 patch)
+├── templates/            ← copy-paste-ready CI / verdict / anomaly blocks
+└── LICENSE               ← MIT
+```
 
-1. **数字幻觉**：source A 的数字算到 source B / 转述时改写
-2. **事实-观点混淆**：source 作者的主观判断被当事实写
-3. **时效模糊**：source 是 2024 年的"目前"，NotebookLM 也写成"目前"
+## 11 variants supported
 
-owner 跑完报告人脑校对 = 漏。
+| Family | Codes | Use case |
+|--------|-------|----------|
+| A · Mapping | A1, A2, A3, A4 | Industry / tools / regions / people |
+| B · Narrative | B1, B2 | Story ammunition / counter-narrative |
+| C · Compliance | C1, C2, C3 | Regulation / standards / policy |
+| D · Timeline | D1 | Event chronology |
+| E · Cross-jurisdiction | E1 | Multi-region legal scoping |
+| F · User segment | F1 | Persona / marketing |
 
-## 方案 · 四段式架构
+Full templates for A1, B1, hard-skeleton, verdict, and anomaly-log are ready in [`templates/`](./templates/). Other variants follow the same shape — extend or open a PR.
 
-1. **搜索大纲**（Deep Research · NotebookLM 端）→ 不设 CI，只要来源列表
-2. **Custom Instructions**（永久预设）→ 变体专属框架 + §10.0 硬骨架
-3. **报告 prompt** → 按 CI 框架走 + 末尾两表（来源对照表 + 自检 section）
-4. **Claude 收尾核对 SOP** → 按 PLAYBOOK § 5 阶段三 3a 跑分级核对
+## Maintenance posture
 
-分级核对：
-
-- **Tier A 决策数字**（金额/比例/KPI）：100% 尝试 cross-ref，paywall 失败显式 reporting
-- **Tier B 时间节点**：抽样 30% cross-ref
-- **Tier C 命名实体**：grep 对照来源表，0 命中标"可能编造"
-
-## 模板库
-
-每个模板独立可用，开头自带使用说明。
-
-- [`templates/ci-hard-skeleton.md`](./templates/ci-hard-skeleton.md) · 301 字符硬骨架（推荐起点 · 粘到任何 CI 末尾）
-- [`templates/ci-A1-mapping.md`](./templates/ci-A1-mapping.md) · A1 求职/竞品 mapping 完整 CI
-- [`templates/ci-B1-narrative.md`](./templates/ci-B1-narrative.md) · B1 narrative 弹药 CI
-- [`templates/verdict-template.md`](./templates/verdict-template.md) · § 5 3a 收尾核对 verdict 结构
-- [`templates/anomaly-log-entry.md`](./templates/anomaly-log-entry.md) · 5 类异常上报模板
-
-## 完整 spec
-
-[PLAYBOOK.md](./PLAYBOOK.md) · v2.1 · 三轮 patch · 11 变体 CI + Tier A/B/C 分级核对 + 5 类异常上报机制
-
-## 维护节奏
-
-Half-monthly maintenance. Personal vault workflow shared as-is. Issue 响应不保证 · PR 欢迎但 merge 看 owner 节奏。
+Personal vault workflow shared as-is. Half-monthly maintenance cadence. Issue response not guaranteed; PRs welcome but merge cadence is owner-paced.
 
 ## Related Projects
 
-[ORP (Obsidian RAG Protocol)](https://github.com/wjameswen888/obsidian-rag-protocol) · ORP 是 vault → AI agent 的 state/memory 协议；本 playbook 是 research handoff workflow spec。相邻但解耦。
+[ORP (Obsidian RAG Protocol)](https://github.com/wjameswen888/obsidian-rag-protocol) · ORP is a state/memory protocol for vault → AI agent. This skill is a research handoff workflow spec. Adjacent but decoupled.
 
 ## License
 
