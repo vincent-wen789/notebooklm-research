@@ -1,68 +1,38 @@
 # notebooklm-research
 
-> A portable Claude × NotebookLM deep-research skill · 4-stage workflow + anti-hallucination guardrails · works in Claude Code, Codex CLI, Anthropic Agents SDK, Hermes
+🌐 [English](README.md) | [中文](README.zh.md) | [日本語](README.ja.md)
+
+**A cross-host Claude × NotebookLM deep-research skill that catches the 3 AI hallucinations NotebookLM hides from you: fabricated citations · silent number drift · time-confused "currently" conclusions.** 4-stage workflow · every report ships with a structured verdict · not pass-by-vibes.
+
+> **Brutally honest**: if ChatGPT Deep Research or Perplexity Pro already work for you, you probably don't need this. Those tools look stable because their failure modes don't break loudly · you don't see a "I made this citation up" warning. This skill is for people who've been burned by that kind of silent error.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Skill version](https://img.shields.io/badge/skill-v2.1-blue)](./CHANGELOG.md)
+[![Cross-host](https://img.shields.io/badge/install-Claude_Code_%7C_Codex_CLI_%7C_Agents_SDK_%7C_Hermes-7C3AED)](#install-once-use-on-four-hosts)
 
-## Install · one line
+### Key differentiators
 
-```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/wjameswen888/notebooklm-research/main/install.sh)
-```
+- **Not another deep-research wrapper**. NotebookLM does the heavy lifting (15-30 sources, long-context synthesis · that's its core strength). This skill wraps a 301-character Custom Instructions block around it, forcing NotebookLM to put inline citations on every claim, label fact / opinion / inference, and tag a three-tier confidence score.
+- **Numbers get cross-referenced automatically**. Tier A / B / C verification: 100% WebFetch reverse-check on decision numbers · 30% sample on time markers · grep cross-check on named entities against the source list · paywall failures get marked `unverifiable` instead of being faked as verified.
+- **Catches what ChatGPT / Perplexity miss**. From actual vault captures: NotebookLM-fabricated papers like "Talos: Anatomy of Bitcoin ETF" and "Amberdata: Microstructure of Taker BSR" (both 404 · look like real papers with author and institution attached) · a "3.1 million" silently drifted to "3.5 million" in paraphrase · a 2024 "currently" treated as today's "currently" · this skill flags all of them.
+- **Install once · run on four hosts**. Claude Code / Codex CLI / Anthropic Agents SDK / Hermes · single source-of-truth · symlinked into each host · `git pull` updates everywhere.
+- **Bi-weekly maintenance · 1-year-old SOP in production**. Personal vault methodology iterated v1 → v2.0 → v2.1 plus three rounds of patches. Not a startup wrapper. The 5 anomaly categories are forged from real incidents, not whiteboarded.
 
-The installer detects AI host paths on your machine and symlinks the skill into each:
+---
 
-- `~/.claude/skills/` — Claude Code CLI
-- `~/.agents/skills/` — Anthropic Agents SDK, OpenAI Codex CLI
-- `~/.codex/skills/` — Codex CLI alt path
-- `~/.hermes/skills/` — Hermes
+## The problem
 
-One source of truth at `~/.local/share/notebooklm-research/` · each host reads via symlink · `git pull` propagates everywhere.
+NotebookLM is a good tool on its own. But bare NotebookLM has 3 systematic distortions that **a human reading the report cannot reliably catch**:
 
-Dry-run / specific hosts / uninstall:
+1. **Number hallucinations**: source A's "3.1 million" gets attributed to source B; paraphrase drifts it to "3.5 million"
+2. **Fact / opinion conflation**: a source author's judgment call ("market is overheated") gets written as a fact
+3. **Temporal drift**: the source says "currently" about 2024, NotebookLM also writes "currently"
 
-```bash
-./install.sh --dry-run
-./install.sh --hosts claude,codex
-./install.sh --uninstall
-```
+ChatGPT Deep Research and Perplexity have the same problems, just hidden behind nicer UI. Most automation wrappers on the market (LangChain · GPT Researcher · generic agents) skip the verification layer entirely · they synthesize and ship. They look stable because nothing breaks loudly. The breakage is silent: the report you're about to make a decision from has subtly wrong numbers.
 
-Or clone manually:
+## Don't want to install? Try the 301-character magic prompt first
 
-```bash
-git clone https://github.com/wjameswen888/notebooklm-research ~/.local/share/notebooklm-research
-~/.local/share/notebooklm-research/install.sh
-```
-
-## Use · one phrase
-
-In any AI host that supports skills:
-
-```
-/notebooklm-research "I want a deep research on <topic>"
-```
-
-The skill walks 4 stages:
-
-1. **Pick variant + scale** — A1 mapping / B1 narrative / C1 compliance / etc., scale S/M/L
-2. **Get the search outline** — paste into NotebookLM Deep Research mode, collect sources
-3. **Get the Custom Instructions** — paste into Notebook Settings (permanent preset)
-4. **Run NotebookLM, return with report** — skill runs Tier A/B/C verification and emits a structured verdict
-
-## What problems does this solve
-
-NotebookLM is a great research tool, but raw NotebookLM has 3 systemic failure modes:
-
-1. **Number hallucination** — source A's "3.1 million" becomes "3.5 million" in synthesis
-2. **Fact/opinion conflation** — author's opinion gets written as fact
-3. **Time-recency drift** — 2024's "currently" passes through as today's "currently"
-
-This skill engineers the defense into the prompt (301-char anti-hallucination hard-skeleton in NotebookLM's Custom Instructions) and into the SOP (Tier A/B/C tiered verification on the returned report).
-
-## Quick taste · the 301-char Magic Prompt
-
-Even without installing the skill, you can paste this into NotebookLM Notebook Settings → Custom Instructions for inline citations + fact/opinion tags + 3-tier confidence on every report:
+Paste this into NotebookLM Notebook Settings → Custom Instructions, zero install:
 
 ```
 ## 来源与可核对性（硬要求）
@@ -76,46 +46,131 @@ Even without installing the skill, you can paste this into NotebookLM Notebook S
    - 自检 section（4 块：未满足 CI / 未找到答案 / 引用频次 top 3 / 内部矛盾）
 ```
 
-Effect:
+Before vs after:
 
-- **Before**: NotebookLM outputs "目前业内主流方案是 XYZ" with tangled references, facts and opinions blurred, numbers drift in synthesis
-- **After**: every claim carries `[#N]` · marked `[事实]`/`[作者观点]`/`[推论]` · dates anchored as `截至 YYYY-MM-DD（[#N] 发布日期）` · confidence tagged `[高 多源 ≥ 2]`/`[中 单源]`/`[低 推论或冲突]`
+- **Before**: NotebookLM outputs "the mainstream solution in the industry currently is XYZ", citations smashed together, facts and opinions mixed, hallucinated numbers
+- **After**: every claim carries `[#N]` · labeled `[事实]` / `[作者观点]` / `[推论]` · `截至 YYYY-MM-DD（[#N] 发布日期）` · three-tier confidence
 
-The full skill workflow adds the other 3 stages (search outline → variant-specific CI → Tier A/B/C verification) on top.
+This is just a fragment of Stage 2 from the skill's full 4-stage workflow · use it standalone and NotebookLM's output quality jumps immediately. Install the skill and you also get: Stage 1 auto-variant selection (11 types · A1 mapping / B1 narrative / C1 compliance etc.) · Stage 4 automatic Tier A/B/C number cross-check · fabricated-paper detection (see "What it feels like" below).
 
-## Repo structure
+## Install once · use on four hosts
 
-```
-notebooklm-research/
-├── SKILL.md              ← the skill (Claude/Codex/Agents/Hermes all read this)
-├── install.sh            ← cross-host installer
-├── README.md             ← you are here
-├── PLAYBOOK.md           ← full v2.1 spec (deep-dive reference · 624 lines)
-├── CHANGELOG.md          ← version history (v1 → v2.0 → v2.1 → 三轮 patch)
-├── templates/            ← copy-paste-ready CI / verdict / anomaly blocks
-└── LICENSE               ← MIT
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/wjameswen888/notebooklm-research/main/install.sh)
 ```
 
-## 11 variants supported
+The installer auto-detects which AI hosts you have installed and drops the skill into each one it finds:
+
+- `~/.claude/skills/` · Claude Code CLI
+- `~/.agents/skills/` · Anthropic Agents SDK · OpenAI Codex CLI
+- `~/.codex/skills/` · Codex CLI fallback path
+- `~/.hermes/skills/` · Hermes
+
+Source-of-truth lives at `~/.local/share/notebooklm-research/` · one `git pull` updates every host · `./install.sh --uninstall` removes everything cleanly.
+
+Flags: `--dry-run` · `--hosts claude,codex` · `--uninstall` · `--force`
+
+## One-liner
+
+After install, on any host:
+
+```
+/notebooklm-research "<your research topic>"
+```
+
+Or just natural language: "do a hiring mapping for crypto+AI startups" · "build the ammunition for the X vertical" · "run a compliance scan for shipping X into Japan" · the skill picks these intents up automatically, **you don't need to mention NotebookLM**.
+
+## What it feels like
+
+You install once. Then you say:
+
+```
+/notebooklm-research "Crypto+AI startup 2026 hiring mapping"
+```
+
+The skill walks through 4 stages:
+
+**Stage 1 · variant + scale**. Default A1 (mapping) + M scale (15-30 sources). Only asks if your topic clearly leans S or L.
+
+**Stage 2 · search outline**. The skill emits a search outline you paste into NotebookLM **Deep Research mode**:
+
+```
+NotebookLM Deep Research · 搜索大纲
+[topic + bilingual keywords + scope limits + source-type preferences + output requirements]
+```
+
+NotebookLM runs and returns its source list. You scan it and cut low-quality or off-topic ones.
+
+**Stage 3 · Custom Instructions**. Once the source list is approved, the skill emits the variant-specific CI (including the 301-char hard skeleton):
+
+```
+## 来源与可核对性（硬要求）
+1. 事实/数字/引述句末必带 [#N]
+2. 数字独立 [#N · 原文引述≤50 字]，不许多条共用
+3. 每条陈述前缀 [事实]/[作者观点]/[推论] 三选一
+...
+```
+
+Paste it into NotebookLM **Notebook Settings → Custom Instructions** (persistent preset). Every future report from this notebook follows these rules.
+
+**Stage 4 · final cross-check**. You hand the finished report back to the skill. It runs Tier A / B / C verification and emits a structured verdict:
+
+```
+【Tier A · decision numbers】 total 12 / cross-ref OK 9 / needs fix 1 / fetch failed 2 (paywall)
+【Tier C · named entities】 in report 23 / in source list 21 / zero-hit 2
+                            (unverified: "Talos Anatomy of Bitcoin ETF" / "Amberdata Microstructure" — likely fabricated)
+【overall】 ⚠ ship after fixes
+```
+
+Plus 5 anomaly auto-detectors: fetch <50% · wall-clock >2× · CI breach · number hallucination · self-check missing ≥ 2 blocks · any hit gets logged so you can track NotebookLM's behavior over time.
+
+## How it compares
+
+| Tool | Depth | Citation discipline | Number cross-ref | Cost |
+|------|-------|---------------------|------------------|------|
+| ChatGPT Deep Research | Mid | Weak (has citations but still hallucinates) | ❌ | $20/mo |
+| Perplexity Deep Research | Mid | Weak | ❌ | $20/mo |
+| GPT Researcher · similar wrappers | Low (shallow synthesis) | None | ❌ | self-host |
+| Bare NotebookLM | High (long-context synthesis) | None (3 distortions undefended) | ❌ | free (Plus $20/mo optional) |
+| **NotebookLM + this skill** | **High** | **4-layer enforced defense** | **✅ Tier A/B/C automated** | **Free** (skill free + NotebookLM free tier is enough) |
+
+This skill is not a replacement for deep-research tools. It makes NotebookLM, one specific tool, catch its own failure modes.
+
+## 11 variants covered
 
 | Family | Codes | Use case |
 |--------|-------|----------|
-| A · Mapping | A1, A2, A3, A4 | Industry / tools / regions / people |
-| B · Narrative | B1, B2 | Story ammunition / counter-narrative |
-| C · Compliance | C1, C2, C3 | Regulation / standards / policy |
-| D · Timeline | D1 | Event chronology |
-| E · Cross-jurisdiction | E1 | Multi-region legal scoping |
-| F · User segment | F1 | Persona / marketing |
+| A · Mapping | A1, A2, A3, A4 | Industry · tool · region · person mapping |
+| B · Narrative | B1, B2 | Story ammunition · counter-narrative |
+| C · Compliance | C1, C2, C3 | Regulation · standard · policy primer |
+| D · Timeline | D1 | Event timeline |
+| E · Cross-jurisdiction | E1 | Multi-region compliance |
+| F · User persona | F1 | User persona · marketing |
 
-Full templates for A1, B1, hard-skeleton, verdict, and anomaly-log are ready in [`templates/`](./templates/). Other variants follow the same shape — extend or open a PR.
+Full A1 · B1 templates · hard skeleton · verdict · anomaly-log are in [`templates/`](./templates/). The other variant frames live in [PLAYBOOK § 10.3+](./PLAYBOOK.md) · fork and modify, or open a PR to fill them out.
 
-## Maintenance posture
+## Repo layout
 
-Personal vault workflow shared as-is. Half-monthly maintenance cadence. Issue response not guaranteed; PRs welcome but merge cadence is owner-paced.
+```
+notebooklm-research/
+├── SKILL.md              ← the skill itself (hosts read this)
+├── install.sh            ← cross-host install script
+├── README.md             ← English (you are here)
+├── README.zh.md          ← 中文
+├── README.ja.md          ← 日本語
+├── PLAYBOOK.md           ← v2.1 full spec (deep reference · 624 lines)
+├── CHANGELOG.md          ← v1 → v2.0 → v2.1 → three patches
+├── templates/            ← templates (CI · verdict · anomaly-log · paste-ready)
+└── LICENSE               ← MIT
+```
 
-## Related Projects
+## Maintenance cadence
 
-[ORP (Obsidian RAG Protocol)](https://github.com/wjameswen888/obsidian-rag-protocol) · ORP is a state/memory protocol for vault → AI agent. This skill is a research handoff workflow spec. Adjacent but decoupled.
+Personal vault workflow · bi-weekly maintenance · shared as-is. Issue response not guaranteed · PRs welcome but merge cadence depends on owner.
+
+## Related projects
+
+[ORP (Obsidian RAG Protocol)](https://github.com/wjameswen888/obsidian-rag-protocol) · ORP is the vault → AI agent state/memory protocol. This skill is the research handoff workflow spec. Adjacent but decoupled.
 
 ## License
 
