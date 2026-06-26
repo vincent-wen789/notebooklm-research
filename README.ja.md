@@ -13,9 +13,9 @@
 ### 差別化ポイント
 
 - **またひとつの deep-research wrapper、ではない**。重い仕事は NotebookLM 本体に任せる（15-30 ソースの長 context 合成 · これが NotebookLM の本来の強み）。この skill は コンパクトな Custom Instructions で外側を固める：すべての claim に inline citation を強制 + 事実 / 著者の見解 / 推論のラベル + 3 段階の confidence。
-- **数字を自動で cross-ref**。Tier A / B / C の照合：決定に効く数字は 100% WebFetch で逆引き · 時間マーカーは 30% サンプリング · 固有名は源リストに grep で突き合わせ · paywall で fetch 失敗したものは `unverifiable` と明示し、verified だと偽らない。
+- **数字は目視ではなく逆引きで照合される**。完成レポートを渡し返すと Stage 4 が Tier A / B / C の照合を回す：決定に効く数字は 100% WebFetch で逆引き · 時間マーカーは 30% サンプリング · 固有名は源リストに grep で突き合わせ · paywall で fetch 失敗したものは `unverifiable` と明示し、verified だと偽らない。（ワークフロー自体は人が介在する paste-and-handback ループで、自動なのは照合のステップ。）
 - **ChatGPT / Perplexity が見逃すものを拾う**。実 vault からのキャプチャ例：NotebookLM が捏造した論文 "Talos: Anatomy of Bitcoin ETF" / "Amberdata: Microstructure of Taker BSR"（両方とも 404 · 著者と所属まで付いて本物っぽく見える）· 「310 万」が言い換えで静かに「350 万」になっていた · 2024 年の「現在」が今日の「現在」として書かれていた · この skill は全部フラグを立てます。
-- **一度入れれば 4 つのホストで使える**。Claude Code / Codex CLI / Anthropic Agents SDK / Hermes · source-of-truth は 1 箇所 · 各 host へ symlink · `git pull` 一発で全部更新。
+- **あなたのスタック全体に入れる**。ネイティブ `SKILL.md` host（Claude Code · Codex · Agents SDK · Hermes）は自動検出インストーラ；ルールファイル型 agent（Cursor · Windsurf · Copilot · Gemini · Aider）は 1 行の pointer を貼る。source-of-truth は 1 箇所 · `git pull` 一発で全部更新。
 - **隔週メンテ · 1 年回している実 SOP**。Personal vault のメソドロジーを v1 → v2.0 → v2.1 + 3 ラウンドのパッチで反復してきた。スタートアップが量産した wrapper ではない。5 カテゴリの異常検知は実際の事故から削り出したもので、ホワイトボードでひねり出したものではありません。
 
 ---
@@ -46,7 +46,17 @@ ChatGPT Deep Research と Perplexity にも同じ問題はあります、ただ�
    - 自己診断 section（4 ブロック：未達 CI / 回答なし / 引用頻度 top 3 / 内部矛盾）
 ```
 
-> **もっと簡単なものが欲しい？** この 6 ルールが多いと感じたら、[`templates/simple-prompt.md`](./templates/simple-prompt.md) に平易な 4 ルール版（EN / 中文 / 日本語）があります — `[#N]` 記法も専門用語もなし。上のブロックは EN / ZH / JA 版が [`templates/ci-hard-skeleton.md`](./templates/ci-hard-skeleton.md) にあります。
+**技術者でない？ この貼り付けステップがあなたにとっての全てです — 以下のインストールは全部スキップ。** 上の 6 ルールが多いと感じたら、平易な 4 ルール版（`[#N]` 記法も専門用語もなし）をどうぞ。こちらを貼ってください：
+
+```
+このノートに書くすべての文について：
+1. 事実・数字・引用の後ろに [1]、[2]、[3]… を付け、最後に対応する出典（タイトル + リンク）を一覧にする。
+2. 見解や自分の推測である文は、冒頭に「見解：」または「推測：」と書く。事実として書かない。
+3. 日付は「2025 年 3 月時点…」のように省略せず書く。「現在」「最近」は使わない。
+4. ある主張の根拠が 1 つの出典しかない場合は「（単一出典）」と付け、未確認だと分かるようにする。
+```
+
+中文 / 日本語の同版：[`templates/simple-prompt.md`](./templates/simple-prompt.md)。フル 6 ルール版は EN / ZH / JA 版が [`templates/ci-hard-skeleton.md`](./templates/ci-hard-skeleton.md) にあります。
 
 Before / after：
 
@@ -66,7 +76,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/vincent-wen789/notebooklm-re
 - `~/.claude/skills/` · **Claude Code CLI**
 - `~/.codex/skills/` · **OpenAI Codex CLI** — 2025 年 12 月から `SKILL.md` をネイティブに読む
 - `~/.agents/skills/` · Anthropic Agents SDK
-- `~/.hermes/skills/` · Hermes
+- `~/.hermes/skills/` · Hermes *(作者の個人的な自律 agent ランタイム — 使っていなければ無視)*
 
 Source-of-truth は `~/.local/share/notebooklm-research/` · `git pull` 一発ですべての host が更新される · `./install.sh --uninstall` でクリーン撤去。
 
@@ -74,7 +84,16 @@ Source-of-truth は `~/.local/share/notebooklm-research/` · `git pull` 一発�
 
 ## インストール · その他の agent（Cursor · Windsurf · Copilot · Gemini · Aider …）
 
-これらの agent には **skill の概念がなく**、常駐の指示ファイルしか読みません。`SKILL.md` を symlink しても何も起きません。代わりに、そのファイルへ短い *pointer* を貼ります（agent はワークフロー本体を必要時に読むので context をほぼ消費しません）：
+これらの agent には **skill の概念がなく**、常駐の指示ファイルしか読みません。`SKILL.md` を symlink しても何も起きません。代わりに、そのファイルへ短い *pointer* を貼ります（agent はワークフロー本体を必要時に読むので context をほぼ消費しません）。
+
+**Step 0 · ファイルをローカルに置く。** pointer は skill のファイルを参照するので、まず一度取得します。インストーラはネイティブ skill host が無いマシンでも無害で、ソースを `~/.local/share/notebooklm-research/` に clone するだけです：
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/vincent-wen789/notebooklm-research/main/install.sh)
+# またはスクリプト無し：git clone https://github.com/vincent-wen789/notebooklm-research ~/.local/share/notebooklm-research
+```
+
+**Step 1 · プロジェクトの指示ファイルへ pointer を追記：**
 
 ```bash
 # プロジェクト内で — pointer を AGENTS.md に追記
@@ -88,6 +107,8 @@ sed -n '/^## Deep research/,/Emit all output/p' ~/.local/share/notebooklm-resear
 | Gemini CLI | `GEMINI.md` |
 
 `AGENTS.md` は [Linux Foundation 管理のオープン標準](https://agents.md/)で、ほとんどの agent が読みます — 一度貼ればスタック全体をだいたいカバー。詳細 + 生のブロック：[`templates/agents-md-snippet.md`](./templates/agents-md-snippet.md)（または `install.sh --print-agents-snippet`）。
+
+**ここで実際に動く範囲。** Stage 1-3（NotebookLM に渡す prompt）はどの agent でも動きます — 価値の大半はここ。Stage 4 の自動数字照合には web-fetch ツールが必要：持っている agent（Cursor、Codex など）なら動き、無ければ citation 規律のあるレポートは得られるので、フラグの付いた数字を手で確認します。Stage 1 の対話的な variant 選択は、ネイティブの質問 UI が無い agent ではプレーンテキストの prompt にフォールバックします。
 
 ## 一行で起動
 
@@ -155,7 +176,7 @@ NotebookLM の **Notebook Settings → Custom Instructions** に貼る（永続�
 
 この skill は deep-research ツールの代替ではありません。**NotebookLM という 1 つのツールに、自分の失敗を捕まえさせる**ためのものです。
 
-## 11 種類の variant をカバー
+## 11 種類の variant フレーム（A1 · B1 はテンプレ完備 · 残り 9 は雛形）
 
 | 系列 | コード | 用途 |
 |------|-------|------|

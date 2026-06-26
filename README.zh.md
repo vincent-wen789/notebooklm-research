@@ -13,9 +13,9 @@
 ### 差异化在哪
 
 - **不是又一个 deep research wrapper**。重活 NotebookLM 干（15-30 信源长 context 综合 · 长 context 是它的核心强项）。这个 skill 包一层 301 字符 Custom Instructions，强制 NotebookLM 每条 claim 自带 inline citation + 事实/观点/推论标签 + 三档置信度。
-- **数字自动 cross-ref**。Tier A/B/C 分级核对：决策数字 100% WebFetch 反查 · 时间节点抽样 30% · 命名实体 grep 对照来源表 · paywall 失败显式标 `unverifiable`，不假装 verified。
+- **数字是被反查的，不是靠眼睛扫的**。你把成稿交回，Stage 4 跑 Tier A/B/C 分级核对：决策数字 100% WebFetch 反查 · 时间节点抽样 30% · 命名实体 grep 对照来源表 · paywall 失败显式标 `unverifiable`，不假装 verified。（整个流程是人在环里的 paste-and-handback 循环，自动的是反查这步。）
 - **抓 ChatGPT/Perplexity 漏的**。比如：vault 真实捕获 NotebookLM 报告里捏造的 "Talos: Anatomy of Bitcoin ETF" / "Amberdata: Microstructure of Taker BSR" 论文（两篇都 404 不存在 · 看起来像真 paper 还配作者和机构）· "310 万"在转述里悄悄漂成"350 万"· 2024 年的"目前"被当成今天的"目前"——这些 skill 全部标出来。
-- **一次装 · 四个 host 用**。Claude Code / Codex CLI / Anthropic Agents SDK / Hermes · source-of-truth 一处 · symlink 到各 host · `git pull` 一次更新所有地方。
+- **装进你的整套栈**。原生 `SKILL.md` host（Claude Code · Codex · Agents SDK · Hermes）走自动检测安装脚本；规则文件型 agent（Cursor · Windsurf · Copilot · Gemini · Aider）贴一行 pointer。source-of-truth 一处 · `git pull` 一次更新所有地方。
 - **半月维护节奏 · 跑了 1 年的真实 SOP**。Personal vault 方法论迭代 v1 → v2.0 → v2.1 + 三轮 patch。不是 startup wrapper。5 类异常分类是真实事故炼出来的，不是白板想的。
 
 ---
@@ -46,7 +46,17 @@ ChatGPT Deep Research 和 Perplexity 有同样的问题，只是被更漂亮的 
    - 自检 section（4 块：未满足 CI / 未找到答案 / 引用频次 top 3 / 内部矛盾）
 ```
 
-> **嫌这 6 条还是太硬核？** [`templates/simple-prompt.md`](./templates/simple-prompt.md) 有个大白话 4 条版（EN / 中文 / 日本語），给非技术用户——没有 `[#N]` 记号、没有术语。上面这块也有 EN / ZH / JA 三版，在 [`templates/ci-hard-skeleton.md`](./templates/ci-hard-skeleton.md)。
+**不懂技术？这个粘贴步骤对你就是全部——下面的安装全跳过。** 嫌上面 6 条太硬核，用这个大白话 4 条版（没有 `[#N]` 记号、没有术语），直接粘这个：
+
+```
+你在这个笔记本里写的每一句话：
+1. 每个事实、数字、引述后面加 [1]、[2]、[3]……，并在最末尾列出对应来源（标题 + 链接）。
+2. 如果某句是观点或你自己的推测，句首写"观点："或"推测："——不要当成事实写。
+3. 日期写全，比如"截至 2025 年 3 月……"，不要写"目前""最近"。
+4. 如果一个说法只有一个来源支撑，加"（单一来源）"，让我知道它没被交叉验证。
+```
+
+中文 / 日本語同款：[`templates/simple-prompt.md`](./templates/simple-prompt.md)。完整 6 条版有 EN / ZH / JA 三版，在 [`templates/ci-hard-skeleton.md`](./templates/ci-hard-skeleton.md)。
 
 效果对比：
 
@@ -66,7 +76,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/vincent-wen789/notebooklm-re
 - `~/.claude/skills/` · **Claude Code CLI**
 - `~/.codex/skills/` · **OpenAI Codex CLI** — 2025 年 12 月起原生读 `SKILL.md`
 - `~/.agents/skills/` · Anthropic Agents SDK
-- `~/.hermes/skills/` · Hermes
+- `~/.hermes/skills/` · Hermes *（作者私有的自主 agent runtime——你不跑就忽略）*
 
 Source-of-truth 在 `~/.local/share/notebooklm-research/` · `git pull` 一次更新所有 host · `./install.sh --uninstall` 干净撤回。
 
@@ -74,7 +84,16 @@ Source-of-truth 在 `~/.local/share/notebooklm-research/` · `git pull` 一次�
 
 ## 安装 · 其他 agent（Cursor · Windsurf · Copilot · Gemini · Aider …）
 
-这些 agent **没有 skill 概念**——只读一个常驻的指令文件，symlink 一个 `SKILL.md` 进去没用。改成往那个文件里贴一段简短的 *pointer*（agent 按需再读完整 workflow，几乎不占 context）：
+这些 agent **没有 skill 概念**——只读一个常驻的指令文件，symlink 一个 `SKILL.md` 进去没用。改成往那个文件里贴一段简短的 *pointer*（agent 按需再读完整 workflow，几乎不占 context）。
+
+**第 0 步 · 先把文件弄到本地。** pointer 引用的是 skill 的文件，所以先拉一次。安装脚本在没有原生 skill host 的机器上是无害的——它只是把源码 clone 到 `~/.local/share/notebooklm-research/`：
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/vincent-wen789/notebooklm-research/main/install.sh)
+# 或者不用脚本：git clone https://github.com/vincent-wen789/notebooklm-research ~/.local/share/notebooklm-research
+```
+
+**第 1 步 · 把 pointer 追加到项目的指令文件：**
 
 ```bash
 # 在你的项目里——把 pointer 追加到 AGENTS.md
@@ -88,6 +107,8 @@ sed -n '/^## Deep research/,/Emit all output/p' ~/.local/share/notebooklm-resear
 | Gemini CLI | `GEMINI.md` |
 
 `AGENTS.md` 是 [Linux 基金会托管的开放标准](https://agents.md/)，大多数 agent 都读它——贴一次基本覆盖全栈。完整说明 + 原始 block：[`templates/agents-md-snippet.md`](./templates/agents-md-snippet.md)（或跑 `install.sh --print-agents-snippet`）。
+
+**这里实际跑得起来的部分。** Stage 1-3（喂给 NotebookLM 的 prompt）在任何 agent 上都能用——这是大头价值。Stage 4 的自动数字反查需要一个联网抓取工具：有的 agent（Cursor、Codex 等）自带、就能跑；没有的话你照样拿到带 citation 纪律的报告，被标出的数字手动核一下。Stage 1 的交互式选变体在没有原生提问 UI 的 agent 上退化成一段纯文字 prompt。
 
 ## 用一句
 
@@ -155,7 +176,7 @@ NotebookLM 跑完返回来源列表，你过一遍砍掉低质量/跑题的。
 
 这个 skill 不是替代 deep research 工具。是让 NotebookLM 这一个工具抓住自己的失败。
 
-## 11 个变体覆盖
+## 11 个变体框架（A1 · B1 有完整模板 · 其余 9 个待补）
 
 | 系列 | Codes | 用途 |
 |------|-------|------|

@@ -13,9 +13,9 @@
 ### Key differentiators
 
 - **Not another deep-research wrapper**. NotebookLM does the heavy lifting (15-30 sources, long-context synthesis · that's its core strength). This skill wraps a compact Custom Instructions block around it, forcing NotebookLM to put inline citations on every claim, label fact / opinion / inference, and tag a three-tier confidence score.
-- **Numbers get cross-referenced automatically**. Tier A / B / C verification: 100% WebFetch reverse-check on decision numbers · 30% sample on time markers · grep cross-check on named entities against the source list · paywall failures get marked `unverifiable` instead of being faked as verified.
+- **Numbers get cross-referenced, not eyeballed**. You hand the finished report back and Stage 4 runs Tier A / B / C verification: 100% WebFetch reverse-check on decision numbers · 30% sample on time markers · grep cross-check on named entities against the source list · paywall failures get marked `unverifiable` instead of being faked as verified. (The workflow itself is a human-in-the-loop paste-and-hand-back loop; the cross-check is the automated part.)
 - **Catches what ChatGPT / Perplexity miss**. From actual vault captures: NotebookLM-fabricated papers like "Talos: Anatomy of Bitcoin ETF" and "Amberdata: Microstructure of Taker BSR" (both 404 · look like real papers with author and institution attached) · a "3.1 million" silently drifted to "3.5 million" in paraphrase · a 2024 "currently" treated as today's "currently" · this skill flags all of them.
-- **Install once · run on four hosts**. Claude Code / Codex CLI / Anthropic Agents SDK / Hermes · single source-of-truth · symlinked into each host · `git pull` updates everywhere.
+- **Install across your stack**. Native `SKILL.md` hosts (Claude Code · Codex · Agents SDK · Hermes) get an auto-detecting installer; rules-based agents (Cursor · Windsurf · Copilot · Gemini · Aider) get a one-line paste-in pointer. Single source-of-truth · `git pull` updates everywhere.
 - **Bi-weekly maintenance · 1-year-old SOP in production**. Personal vault methodology iterated v1 → v2.0 → v2.1 plus three rounds of patches. Not a startup wrapper. The 5 anomaly categories are forged from real incidents, not whiteboarded.
 
 ---
@@ -46,7 +46,17 @@ Paste this into NotebookLM Notebook Settings → Custom Instructions, zero insta
    - self-check section (4 blocks: unmet CI / no answer found / top-3 citation frequency / internal contradictions)
 ```
 
-> **Want it even simpler?** If those 6 rules look like a lot, [`templates/simple-prompt.md`](./templates/simple-prompt.md) has a plain-language 4-rule version (EN / 中文 / 日本語) for non-power-users — no `[#N]` notation, no jargon. The block above ships in EN / ZH / JA too at [`templates/ci-hard-skeleton.md`](./templates/ci-hard-skeleton.md).
+**Not a coder? This paste step is the whole thing for you — skip everything below.** If those 6 rules look like a lot, here's the plain-language 4-rule version (no `[#N]`, no jargon) — paste this instead:
+
+```
+For everything you write in this notebook:
+1. Put a [1], [2], [3]… after every fact, number, or quote, and list the matching source (title + link) at the very end.
+2. If a sentence is someone's opinion or your own guess, start it with "Opinion:" or "Guess:" — never write those as plain fact.
+3. Write dates in full, like "as of March 2025…", instead of "currently" or "recently".
+4. If only one source backs a claim, add "(single source)" so I know it's not confirmed.
+```
+
+Same block in 中文 / 日本語: [`templates/simple-prompt.md`](./templates/simple-prompt.md). The fuller 6-rule version ships in EN / ZH / JA at [`templates/ci-hard-skeleton.md`](./templates/ci-hard-skeleton.md).
 
 Before vs after:
 
@@ -66,7 +76,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/vincent-wen789/notebooklm-re
 - `~/.claude/skills/` · **Claude Code CLI**
 - `~/.codex/skills/` · **OpenAI Codex CLI** — reads `SKILL.md` natively since Dec 2025
 - `~/.agents/skills/` · Anthropic Agents SDK
-- `~/.hermes/skills/` · Hermes
+- `~/.hermes/skills/` · Hermes *(a personal autonomous-agent runtime — skip if you don't run it)*
 
 Source-of-truth lives at `~/.local/share/notebooklm-research/` · one `git pull` updates every host · `./install.sh --uninstall` removes everything cleanly.
 
@@ -74,7 +84,16 @@ Flags: `--dry-run` · `--hosts claude,codex` · `--uninstall` · `--force` · `-
 
 ## Install · other agents (Cursor · Windsurf · Copilot · Gemini · Aider …)
 
-These agents have **no skill concept** — they only read an always-on instructions file, so a symlinked `SKILL.md` does nothing. Instead, paste a short *pointer* into that file (the agent then reads the full workflow on demand, near-zero context cost):
+These agents have **no skill concept** — they only read an always-on instructions file, so a symlinked `SKILL.md` does nothing. Instead, paste a short *pointer* into that file (the agent then reads the full workflow on demand, near-zero context cost).
+
+**Step 0 · get the files on disk.** The pointer references the skill's files, so fetch them once. The installer is harmless on a machine with no native skill host — it just clones the source to `~/.local/share/notebooklm-research/`:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/vincent-wen789/notebooklm-research/main/install.sh)
+# or, no installer: git clone https://github.com/vincent-wen789/notebooklm-research ~/.local/share/notebooklm-research
+```
+
+**Step 1 · append the pointer to your project's instructions file:**
 
 ```bash
 # from inside your project — appends the pointer to AGENTS.md
@@ -88,6 +107,8 @@ sed -n '/^## Deep research/,/Emit all output/p' ~/.local/share/notebooklm-resear
 | Gemini CLI | `GEMINI.md` |
 
 `AGENTS.md` is the [Linux-Foundation open standard](https://agents.md/) most of these read, so one paste usually covers your whole stack. Full details + the raw block: [`templates/agents-md-snippet.md`](./templates/agents-md-snippet.md) (or run `install.sh --print-agents-snippet`).
+
+**What actually runs here.** Stages 1-3 (the prompts NotebookLM uses) work on any agent — that's most of the value. Stage 4's automated number cross-check needs a web-fetch tool: agents that have one (Cursor, Codex, etc.) run it; if yours doesn't, you still get the citation-disciplined report and verify the flagged numbers by hand. The interactive variant pick (Stage 1) falls back to a plain text prompt on agents without a native question UI.
 
 ## One-liner
 
@@ -155,7 +176,7 @@ Plus 5 anomaly auto-detectors: fetch <50% · wall-clock >2× · CI breach · num
 
 This skill is not a replacement for deep-research tools. It makes NotebookLM, one specific tool, catch its own failure modes.
 
-## 11 variants covered
+## 11 variant frameworks (A1 · B1 templated · 9 scaffolded)
 
 | Family | Codes | Use case |
 |--------|-------|----------|

@@ -30,9 +30,15 @@ Format inspired by [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) but 
 - **新增 rules-based agent 安装路径**：Cursor / Windsurf / GitHub Copilot / Gemini CLI / Aider / Zed 等没有 skill 概念，只读常驻指令文件 → 新增 `templates/agents-md-snippet.md`（往 `AGENTS.md` / `GEMINI.md` 贴一段 pointer，按需读 SKILL.md，几乎不占 context），三个 README 加「其他 agent」安装章节 + 每工具读取文件对照表
 - `install.sh` 新增 `--print-agents-snippet` flag + 头部注释 / 收尾提示更新；host 列表去掉误导性的「Codex fallback path」重复项
 
-### Notes
+### README clarity（4-persona 冷读审计驱动 · README-only · 不 bump）
 
-- "301 字符" 仍指中文版硬骨架；EN / JA 版字符数不同，但语义对齐
+跑 persona audit,跨镜头共识修了 README 几处:
+
+- **安装故事自相矛盾** → differentiator 还留着旧的「四个 host」(Cursor 在 badge 里却不在四个里) → 改写成「native skill host vs rules-based agent」两层,与 badge 一致(三语)
+- **rules-based 安装缺第零步** → 「其他 agent」那段直接 `sed ~/.local/share/...`,但该路径要先跑 install.sh 才存在 → 加 Step 0(curl / git clone 取源)+ Step 1(贴 pointer)(三语)
+- **没说非原生 host 上 Stage 4 跑不跑** → 加「这里实际跑得起来的部分」:Stage 1-3 任何 agent 都行,Stage 4 自动反查需宿主联网工具、没有则手动核(三语)
+- **简版藏在文件链接里** → 大白话 4 条版直接 inline 到 README + 加「不懂技术?只需这一步」signpost(三语)
+- 软化「数字自动 cross-ref」→「被反查的,不是眼睛扫的」(承认是 human-in-the-loop);`Hermes` 加一句脚注;「11 variants covered」→「A1·B1 有模板·其余 9 雏形」
 
 ---
 
