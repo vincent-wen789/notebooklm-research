@@ -1,32 +1,39 @@
 #!/usr/bin/env bash
 # notebooklm-research · cross-host installer
-# Detects AI host paths on this machine and symlinks the skill into each.
+# Symlinks the skill into every AI host that reads the SKILL.md format natively.
 #
-# Supported hosts:
-#   - Claude Code CLI     (~/.claude/skills/)
+# Native SKILL.md hosts (auto-installed here):
+#   - Claude Code CLI      (~/.claude/skills/)
+#   - OpenAI Codex CLI     (~/.codex/skills/)   ← reads SKILL.md natively since Dec 2025
 #   - Anthropic Agents SDK (~/.agents/skills/)
-#   - OpenAI Codex CLI    (~/.codex/skills/)
-#   - Hermes              (~/.hermes/skills/)
+#   - Hermes               (~/.hermes/skills/)
+#
+# Rules-based agents (Cursor, Windsurf, Copilot, Gemini, Aider, Zed …) have no
+# skill concept — they read an always-on instructions file. Install on those by
+# pasting the pointer block from templates/agents-md-snippet.md into their
+# AGENTS.md / GEMINI.md / rules file. Run with --print-agents-snippet to print it.
 #
 # Usage:
-#   bash <(curl -fsSL https://raw.githubusercontent.com/wjameswen888/notebooklm-research/main/install.sh)
+#   bash <(curl -fsSL https://raw.githubusercontent.com/vincent-wen789/notebooklm-research/main/install.sh)
 #
 # Flags:
-#   --dry-run     Show what would happen, do not modify anything
-#   --force       Overwrite existing non-symlink target dirs
-#   --hosts X,Y   Install only to specific hosts (e.g., "claude,agents")
-#   --uninstall   Remove all installed symlinks
-#   --help        Show this help
+#   --dry-run                Show what would happen, do not modify anything
+#   --force                  Overwrite existing non-symlink target dirs
+#   --hosts X,Y              Install only to specific hosts (e.g., "claude,codex")
+#   --uninstall              Remove all installed symlinks
+#   --print-agents-snippet   Print the AGENTS.md pointer block (for rules-based agents) and exit
+#   --help                   Show this help
 
 set -euo pipefail
 
 SKILL_NAME="notebooklm-research"
-REPO_URL="https://github.com/wjameswen888/notebooklm-research"
+REPO_URL="https://github.com/vincent-wen789/notebooklm-research"
 INSTALL_ROOT="${NOTEBOOKLM_RESEARCH_HOME:-$HOME/.local/share/notebooklm-research}"
 
 DRY_RUN=0
 FORCE=0
 UNINSTALL=0
+PRINT_SNIPPET=0
 SELECTED_HOSTS=""
 
 # Host registry: <key>:<path>
@@ -46,12 +53,26 @@ ok()  { printf '\033[32m✓\033[0m %s\n' "$*"; }
 warn() { printf '\033[33m⚠\033[0m %s\n' "$*"; }
 err() { printf '\033[31m✗\033[0m %s\n' "$*" >&2; }
 
+# For rules-based agents (Cursor / Windsurf / Copilot / Gemini / Aider …): the
+# pointer block to paste into their AGENTS.md / GEMINI.md / rules file.
+print_agents_snippet() {
+  cat <<'SNIPPET'
+## Deep research (NotebookLM workflow)
+When the user wants deep research, an industry/competitor mapping, narrative ammunition, a compliance scan, a user-persona profile, or "a write-up with sources I can trust" — read and follow `~/.local/share/notebooklm-research/SKILL.md` (the full 4-stage workflow). For a quick no-setup version, hand them `~/.local/share/notebooklm-research/templates/simple-prompt.md`. Emit all output in the user's language.
+SNIPPET
+}
+
 while [ $# -gt 0 ]; do
   case "$1" in
     --dry-run) DRY_RUN=1 ;;
     --force) FORCE=1 ;;
     --uninstall) UNINSTALL=1 ;;
-    --hosts) SELECTED_HOSTS="$2"; shift ;;
+    --print-agents-snippet) PRINT_SNIPPET=1 ;;
+    --hosts)
+      case "${2:-}" in
+        ""|--*) err "--hosts needs a value (e.g. claude,codex)"; exit 1 ;;
+      esac
+      SELECTED_HOSTS="$2"; shift ;;
     --help|-h) print_help; exit 0 ;;
     *) err "Unknown flag: $1"; print_help; exit 1 ;;
   esac
@@ -156,6 +177,10 @@ uninstall_from_hosts() {
 }
 
 # Main
+if [ "$PRINT_SNIPPET" -eq 1 ]; then
+  print_agents_snippet
+  exit 0
+fi
 [ "$DRY_RUN" -eq 1 ] && log "DRY RUN — no changes will be made."
 locate_source
 detect_hosts
@@ -172,6 +197,11 @@ ok "Done. Installed to ${#HOSTS_FOUND[@]} host(s)."
 log ""
 log "Try it (any host that supports skills):"
 log "  /notebooklm-research \"I want a deep research on <topic>\""
+log ""
+log "Using a rules-based agent (Cursor / Windsurf / Copilot / Gemini / Aider …)?"
+log "  Those don't auto-load skills. Paste the pointer into their AGENTS.md / GEMINI.md:"
+log "    $0 --print-agents-snippet"
+log "  Details: $SOURCE_DIR/templates/agents-md-snippet.md"
 log ""
 log "Update later:    git -C $SOURCE_DIR pull"
 log "Uninstall:       $0 --uninstall"

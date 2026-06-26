@@ -6,9 +6,39 @@
 
 **跟其他模板关系**：A1 / B1 等变体 CI 末尾都会写 `[追加 § 10.0 硬骨架]` — 那个位置就粘这段。
 
+**语言**：下面提供 EN / ZH / JA 三版。**粘跟你研究语言一致的那版**——它决定 NotebookLM 用什么语言输出。其它语言照着翻一版即可（标签词随语言走）。
+
 ---
 
-## 模板（直接复制粘贴）
+## Template · English (copy-paste)
+
+```
+## Sourcing & verifiability (hard requirements)
+1. End every fact / number / quote with [#N] (maps to the source table at the end)
+2. Each number (amount / % / date / count / version) gets its own [#N · source quote ≤ 50 words] — never share one across several
+3. Prefix every statement with exactly one of [fact] / [opinion] / [inference]
+4. Write time as "as of YYYY-MM-DD ([#N] publish date)" — never "currently / latest"
+5. Confidence: [high · 2+ sources] / [mid · single source] / [low · inference or conflict]
+6. End the report with two tables (field defs in the report prompt):
+   - source table
+   - self-check section (4 blocks: unmet CI / no answer found / top-3 citation frequency / internal contradictions)
+```
+
+## Template · 日本語（コピペ）
+
+```
+## ソースと照合可能性（必須要件）
+1. 事実 / 数字 / 引用の文末に必ず [#N]（末尾の源対照表に対応）
+2. 数字（金額 / 比率 / 日付 / 人数 / バージョン）は独立した [#N · 原文引用 50 字以内] · 複数で共用しない
+3. 各記述の冒頭に [事実] / [見解] / [推論] のいずれか一つを付ける
+4. 時間は「YYYY-MM-DD 時点（[#N] 公開日）」· 「現在 / 最新」は使わない
+5. 確信度 [高 · 複数源 2 以上] / [中 · 単一源] / [低 · 推論または矛盾]
+6. レポート末尾に 2 つの表を付ける（フィールド定義はレポート prompt 参照）：
+   - 源対照表
+   - 自己診断 section（4 ブロック：未達 CI / 回答なし / 引用頻度 top 3 / 内部矛盾）
+```
+
+## 模板 · 中文（直接复制粘贴）
 
 ```
 ## 来源与可核对性（硬要求）

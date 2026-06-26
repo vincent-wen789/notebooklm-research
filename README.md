@@ -7,12 +7,12 @@
 > **Brutally honest**: if ChatGPT Deep Research or Perplexity Pro already work for you, you probably don't need this. Those tools look stable because their failure modes don't break loudly · you don't see a "I made this citation up" warning. This skill is for people who've been burned by that kind of silent error.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Skill version](https://img.shields.io/badge/skill-v2.1-blue)](./CHANGELOG.md)
-[![Cross-host](https://img.shields.io/badge/install-Claude_Code_%7C_Codex_CLI_%7C_Agents_SDK_%7C_Hermes-7C3AED)](#install-once-use-on-four-hosts)
+[![Skill version](https://img.shields.io/badge/skill-v2.2-blue)](./CHANGELOG.md)
+[![Cross-host](https://img.shields.io/badge/install-Claude_Code_%7C_Codex_%7C_Cursor_%7C_Windsurf_%7C_Copilot_%7C_Gemini-7C3AED)](#install--native-skill-hosts-claude-code--codex)
 
 ### Key differentiators
 
-- **Not another deep-research wrapper**. NotebookLM does the heavy lifting (15-30 sources, long-context synthesis · that's its core strength). This skill wraps a 301-character Custom Instructions block around it, forcing NotebookLM to put inline citations on every claim, label fact / opinion / inference, and tag a three-tier confidence score.
+- **Not another deep-research wrapper**. NotebookLM does the heavy lifting (15-30 sources, long-context synthesis · that's its core strength). This skill wraps a compact Custom Instructions block around it, forcing NotebookLM to put inline citations on every claim, label fact / opinion / inference, and tag a three-tier confidence score.
 - **Numbers get cross-referenced automatically**. Tier A / B / C verification: 100% WebFetch reverse-check on decision numbers · 30% sample on time markers · grep cross-check on named entities against the source list · paywall failures get marked `unverifiable` instead of being faked as verified.
 - **Catches what ChatGPT / Perplexity miss**. From actual vault captures: NotebookLM-fabricated papers like "Talos: Anatomy of Bitcoin ETF" and "Amberdata: Microstructure of Taker BSR" (both 404 · look like real papers with author and institution attached) · a "3.1 million" silently drifted to "3.5 million" in paraphrase · a 2024 "currently" treated as today's "currently" · this skill flags all of them.
 - **Install once · run on four hosts**. Claude Code / Codex CLI / Anthropic Agents SDK / Hermes · single source-of-truth · symlinked into each host · `git pull` updates everywhere.
@@ -30,45 +30,64 @@ NotebookLM is a good tool on its own. But bare NotebookLM has 3 systematic disto
 
 ChatGPT Deep Research and Perplexity have the same problems, just hidden behind nicer UI. Most automation wrappers on the market (LangChain · GPT Researcher · generic agents) skip the verification layer entirely · they synthesize and ship. They look stable because nothing breaks loudly. The breakage is silent: the report you're about to make a decision from has subtly wrong numbers.
 
-## Don't want to install? Try the 301-character magic prompt first
+## Don't want to install? Try the magic prompt first
 
 Paste this into NotebookLM Notebook Settings → Custom Instructions, zero install:
 
 ```
-## 来源与可核对性（硬要求）
-1. 事实/数字/引述句末必带 [#N]（对应文末来源对照表）
-2. 数字（金额/比例/日期/人数/版本号）独立 [#N · 原文引述≤50 字]，不许多条共用
-3. 每条陈述前缀 [事实]/[作者观点]/[推论] 三选一
-4. 时间用"截至 YYYY-MM-DD（[#N] 发布日期）"，不用"目前/最新"
-5. 置信度 [高 多源 ≥ 2]/[中 单源]/[低 推论或冲突]
-6. 报告末尾必附两表（字段定义见报告 prompt）：
-   - 来源对照表
-   - 自检 section（4 块：未满足 CI / 未找到答案 / 引用频次 top 3 / 内部矛盾）
+## Sourcing & verifiability (hard requirements)
+1. End every fact / number / quote with [#N] (maps to the source table at the end)
+2. Each number (amount / % / date / count / version) gets its own [#N · source quote ≤ 50 words] — never share one across several
+3. Prefix every statement with exactly one of [fact] / [opinion] / [inference]
+4. Write time as "as of YYYY-MM-DD ([#N] publish date)" — never "currently / latest"
+5. Confidence: [high · 2+ sources] / [mid · single source] / [low · inference or conflict]
+6. End the report with two tables (field defs in the report prompt):
+   - source table
+   - self-check section (4 blocks: unmet CI / no answer found / top-3 citation frequency / internal contradictions)
 ```
+
+> **Want it even simpler?** If those 6 rules look like a lot, [`templates/simple-prompt.md`](./templates/simple-prompt.md) has a plain-language 4-rule version (EN / 中文 / 日本語) for non-power-users — no `[#N]` notation, no jargon. The block above ships in EN / ZH / JA too at [`templates/ci-hard-skeleton.md`](./templates/ci-hard-skeleton.md).
 
 Before vs after:
 
 - **Before**: NotebookLM outputs "the mainstream solution in the industry currently is XYZ", citations smashed together, facts and opinions mixed, hallucinated numbers
-- **After**: every claim carries `[#N]` · labeled `[事实]` / `[作者观点]` / `[推论]` · `截至 YYYY-MM-DD（[#N] 发布日期）` · three-tier confidence
+- **After**: every claim carries `[#N]` · labeled `[fact]` / `[opinion]` / `[inference]` · `as of YYYY-MM-DD ([#N] publish date)` · three-tier confidence
 
 This is just a fragment of Stage 2 from the skill's full 4-stage workflow · use it standalone and NotebookLM's output quality jumps immediately. Install the skill and you also get: Stage 1 auto-variant selection (11 types · A1 mapping / B1 narrative / C1 compliance etc.) · Stage 4 automatic Tier A/B/C number cross-check · fabricated-paper detection (see "What it feels like" below).
 
-## Install once · use on four hosts
+## Install · native skill hosts (Claude Code · Codex)
+
+`SKILL.md` is now a cross-agent open standard. The installer auto-detects the hosts that read it natively and symlinks the skill into each:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/wjameswen888/notebooklm-research/main/install.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/vincent-wen789/notebooklm-research/main/install.sh)
 ```
 
-The installer auto-detects which AI hosts you have installed and drops the skill into each one it finds:
-
-- `~/.claude/skills/` · Claude Code CLI
-- `~/.agents/skills/` · Anthropic Agents SDK · OpenAI Codex CLI
-- `~/.codex/skills/` · Codex CLI fallback path
+- `~/.claude/skills/` · **Claude Code CLI**
+- `~/.codex/skills/` · **OpenAI Codex CLI** — reads `SKILL.md` natively since Dec 2025
+- `~/.agents/skills/` · Anthropic Agents SDK
 - `~/.hermes/skills/` · Hermes
 
 Source-of-truth lives at `~/.local/share/notebooklm-research/` · one `git pull` updates every host · `./install.sh --uninstall` removes everything cleanly.
 
-Flags: `--dry-run` · `--hosts claude,codex` · `--uninstall` · `--force`
+Flags: `--dry-run` · `--hosts claude,codex` · `--uninstall` · `--force` · `--print-agents-snippet`
+
+## Install · other agents (Cursor · Windsurf · Copilot · Gemini · Aider …)
+
+These agents have **no skill concept** — they only read an always-on instructions file, so a symlinked `SKILL.md` does nothing. Instead, paste a short *pointer* into that file (the agent then reads the full workflow on demand, near-zero context cost):
+
+```bash
+# from inside your project — appends the pointer to AGENTS.md
+sed -n '/^## Deep research/,/Emit all output/p' ~/.local/share/notebooklm-research/templates/agents-md-snippet.md >> ./AGENTS.md
+```
+
+| Agent | File it reads |
+|-------|---------------|
+| Cursor · Windsurf · Aider · Zed · Jules · Amp · Devin · JetBrains Junie · VS Code | project `AGENTS.md` |
+| GitHub Copilot | `.github/copilot-instructions.md` *(or `AGENTS.md`)* |
+| Gemini CLI | `GEMINI.md` |
+
+`AGENTS.md` is the [Linux-Foundation open standard](https://agents.md/) most of these read, so one paste usually covers your whole stack. Full details + the raw block: [`templates/agents-md-snippet.md`](./templates/agents-md-snippet.md) (or run `install.sh --print-agents-snippet`).
 
 ## One-liner
 
@@ -95,19 +114,19 @@ The skill walks through 4 stages:
 **Stage 2 · search outline**. The skill emits a search outline you paste into NotebookLM **Deep Research mode**:
 
 ```
-NotebookLM Deep Research · 搜索大纲
+NotebookLM Deep Research · search outline
 [topic + bilingual keywords + scope limits + source-type preferences + output requirements]
 ```
 
 NotebookLM runs and returns its source list. You scan it and cut low-quality or off-topic ones.
 
-**Stage 3 · Custom Instructions**. Once the source list is approved, the skill emits the variant-specific CI (including the 301-char hard skeleton):
+**Stage 3 · Custom Instructions**. Once the source list is approved, the skill emits the variant-specific CI (including the hard skeleton, in your language):
 
 ```
-## 来源与可核对性（硬要求）
-1. 事实/数字/引述句末必带 [#N]
-2. 数字独立 [#N · 原文引述≤50 字]，不许多条共用
-3. 每条陈述前缀 [事实]/[作者观点]/[推论] 三选一
+## Sourcing & verifiability (hard requirements)
+1. End every fact / number / quote with [#N]
+2. Each number gets its own [#N · source quote ≤ 50 words] — never shared
+3. Prefix every statement with one of [fact] / [opinion] / [inference]
 ...
 ```
 
@@ -158,8 +177,8 @@ notebooklm-research/
 ├── README.md             ← English (you are here)
 ├── README.zh.md          ← 中文
 ├── README.ja.md          ← 日本語
-├── PLAYBOOK.md           ← v2.1 full spec (deep reference · 624 lines)
-├── CHANGELOG.md          ← v1 → v2.0 → v2.1 → three patches
+├── PLAYBOOK.md           ← v2.2 full spec (deep reference · 624 lines)
+├── CHANGELOG.md          ← v1 → v2.0 → v2.1 → v2.2
 ├── templates/            ← templates (CI · verdict · anomaly-log · paste-ready)
 └── LICENSE               ← MIT
 ```
@@ -170,7 +189,7 @@ Personal vault workflow · bi-weekly maintenance · shared as-is. Issue response
 
 ## Related projects
 
-[ORP (Obsidian RAG Protocol)](https://github.com/wjameswen888/obsidian-rag-protocol) · ORP is the vault → AI agent state/memory protocol. This skill is the research handoff workflow spec. Adjacent but decoupled.
+[ORP (Obsidian RAG Protocol)](https://github.com/vincent-wen789/obsidian-rag-protocol) · ORP is the vault → AI agent state/memory protocol. This skill is the research handoff workflow spec. Adjacent but decoupled.
 
 ## License
 

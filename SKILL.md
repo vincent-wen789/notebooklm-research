@@ -1,8 +1,8 @@
 ---
 name: notebooklm-research
-description: Run a 4-stage Claude × NotebookLM deep-research workflow with anti-hallucination guardrails. Use whenever the user wants deep research, competitor mapping, narrative ammunition, compliance scoping, industry decode, user-segment profile, trend study, or a research dossier with citations. Trigger on phrases like "深度调研", "做 mapping", "梳理 X", "弹药库", "竞品分析", "用户画像", "面试情报", "industry decode", "compliance scan", or "comprehensive write-up on X", even without explicit NotebookLM mention. Stages, (1) Deep Research search outline, (2) 301-char hard-skeleton Custom Instructions forcing inline [#N] citations + fact/opinion/inference tags + recency markers + 3-tier confidence + self-check, (3) variant-specific full CI to paste into Notebook Settings, (4) Tier A/B/C verification on returned report plus structured verdict. Guards against NotebookLM's three systemic failures, number hallucination, fact-opinion conflation, time-recency drift.
+description: Run a 4-stage Claude × NotebookLM deep-research workflow with anti-hallucination guardrails. Use whenever the user wants deep research, competitor mapping, narrative ammunition, compliance scoping, industry decode, user-segment profile, trend study, or a research dossier with citations. Trigger on phrases like "深度调研", "做 mapping", "梳理 X", "弹药库", "竞品分析", "用户画像", "面试情报", "industry decode", "compliance scan", or "comprehensive write-up on X", even without explicit NotebookLM mention. Stages, (1) Deep Research search outline, (2) hard-skeleton Custom Instructions forcing inline [#N] citations + fact/opinion/inference tags + recency markers + 3-tier confidence + self-check, (3) variant-specific full CI to paste into Notebook Settings, (4) Tier A/B/C verification on returned report plus structured verdict. Guards against NotebookLM's three systemic failures, number hallucination, fact-opinion conflation, time-recency drift.
 license: MIT
-version: 2.1
+version: 2.2
 ---
 
 # NotebookLM Research
@@ -15,6 +15,22 @@ Full spec lives in [PLAYBOOK.md](./PLAYBOOK.md). Reusable building blocks live i
 
 ---
 
+## Output language · match the user (non-negotiable)
+
+**Detect the user's language from their request and emit every artifact in it** — search outline, Custom Instructions, verdict, all of it. The templates in this repo are written in Chinese as the *canonical reference copy*; they are not a language mandate. When you emit:
+
+1. Translate the human-readable scaffolding (section headers, instructions, field names) into the user's language.
+2. Set the report's output language to **match the user**, not the template. The hard-skeleton ships in EN / ZH / JA at [`templates/ci-hard-skeleton.md`](./templates/ci-hard-skeleton.md) — pick the user's language; for any other language, translate it.
+3. Keep the machinery markers (`[#N]`, the fact/opinion/inference tags, confidence tiers) but render the tag *words* in the user's language — e.g. `[fact]/[opinion]/[inference]` for English, `[事实]/[作者观点]/[推论]` for Chinese, `[事実]/[見解]/[推論]` for Japanese. Your Stage 4 grep then matches the same language.
+
+Default to the user's language. Only fall back to Chinese if the user is clearly writing in Chinese or gives no signal.
+
+## Two modes · full vs simple
+
+This skill defaults to the **full 4-stage workflow** below (expert mode). If the user is clearly a non-power-user — they just want "better NotebookLM research," don't mention variants/verification/citations, or ask for "a simple version" — **skip straight to [`templates/simple-prompt.md`](./templates/simple-prompt.md)**: one plain-language prompt they paste into NotebookLM, no install, no variant selection, no Tier A/B/C. Emit it in their language. Offer the full workflow only if they want more.
+
+---
+
 ## The Why · Three NotebookLM Failure Modes
 
 Before starting, remember **why** this workflow exists. NotebookLM (and any LLM-driven research tool) has 3 systemic failures the SOP defends against:
@@ -23,7 +39,7 @@ Before starting, remember **why** this workflow exists. NotebookLM (and any LLM-
 2. **Fact/opinion conflation** — the source author's subjective judgment gets written as fact
 3. **Time-recency drift** — a 2024 source's "currently" passes through as today's "currently"
 
-These can't be caught by "reading the report carefully" — humans miss things at scale. This workflow engineers the defense into the prompt (301-char hard-skeleton CI) and into the SOP (Tier A/B/C verification on the returned report).
+These can't be caught by "reading the report carefully" — humans miss things at scale. This workflow engineers the defense into the prompt (hard-skeleton CI) and into the SOP (Tier A/B/C verification on the returned report).
 
 ---
 
@@ -96,12 +112,12 @@ Tell the user: "Take this to NotebookLM Deep Research mode. When sources come ba
 
 After the user audits sources, generate the variant-specific full CI for them to paste into **NotebookLM Notebook Settings → Custom Instructions** (permanent preset).
 
-For variants A1 and B1, the full templates are ready at [`templates/ci-A1-mapping.md`](./templates/ci-A1-mapping.md) and [`templates/ci-B1-narrative.md`](./templates/ci-B1-narrative.md). Read the relevant file and emit the codeblock contents to the user.
+For variants A1 and B1, the full templates are ready at [`templates/ci-A1-mapping.md`](./templates/ci-A1-mapping.md) and [`templates/ci-B1-narrative.md`](./templates/ci-B1-narrative.md). Read the relevant file and emit the codeblock contents to the user — **translating the whole codeblock (role, output framing, tag words, hard requirements) into the user's language as you emit it**, per the Output-language rule above. The template files are the Chinese reference copy; do not paste Chinese CI to a non-Chinese user.
 
 For other variants (A2-F1), the framework is in [PLAYBOOK § 10.3+](./PLAYBOOK.md). If the template is still a stub, do this:
 1. Take the A1 template as base.
 2. Adapt the "core framework" section to the variant (e.g., for C1 compliance: replace "competitor matrix" with "regulatory matrix · 法源 / 主管 / 违反后果").
-3. **Always** append the 301-char hard-skeleton from [`templates/ci-hard-skeleton.md`](./templates/ci-hard-skeleton.md) at the end. This is non-negotiable.
+3. **Always** append the hard-skeleton from [`templates/ci-hard-skeleton.md`](./templates/ci-hard-skeleton.md) at the end. This is non-negotiable.
 
 Emit:
 
@@ -111,7 +127,7 @@ NotebookLM Custom Instructions · [Variant code]
 Paste this into Notebook Settings → Custom Instructions:
 
 ---8<--- begin CI ---8<---
-[full CI here · including 301-char hard-skeleton at end]
+[full CI here · including hard-skeleton at end]
 ---8<--- end CI ---8<---
 
 Then run your research prompt as normal. NotebookLM will follow this CI as a permanent preset.
@@ -168,7 +184,7 @@ Extract all named entities (people, companies, products, regulations, paper titl
 Use the template at [`templates/verdict-template.md`](./templates/verdict-template.md). Output:
 
 ```
-NotebookLM 报告核对 verdict (v2.1)
+NotebookLM 报告核对 verdict (v2.2)
 
 【规模档】 S / M / L
 【结构】 来源对照表 ✅/❌  自检 section ✅/❌
@@ -210,11 +226,13 @@ Use [`templates/anomaly-log-entry.md`](./templates/anomaly-log-entry.md) as the 
 
 ## Cross-host notes
 
-Portable across:
+`SKILL.md` is a cross-agent open standard. **Native skill hosts** load this file directly:
 - **Claude Code CLI** (`~/.claude/skills/notebooklm-research/`) — use AskUserQuestion for Stage 1 and TodoWrite to track stages
-- **Anthropic Agents SDK · OpenAI Codex CLI** (`~/.agents/skills/notebooklm-research/`) — fall back to plain text prompts (no AskUserQuestion); Codex has WebFetch
-- **Codex CLI alt path** (`~/.codex/skills/notebooklm-research/`)
+- **OpenAI Codex CLI** (`~/.codex/skills/notebooklm-research/`) — reads SKILL.md natively (since Dec 2025); no AskUserQuestion, use plain-text prompts; has WebFetch
+- **Anthropic Agents SDK** (`~/.agents/skills/notebooklm-research/`) — plain-text prompts
 - **Hermes** (`~/.hermes/skills/notebooklm-research/`) — autonomous mode: use defaults (M scale, A1 variant) unless the calling cron job overrides
+
+**Rules-based agents** (Cursor / Windsurf / GitHub Copilot / Gemini CLI / Aider / Zed …) have no skill loader — they reach this workflow via a pointer in their `AGENTS.md` / `GEMINI.md` (see [`templates/agents-md-snippet.md`](./templates/agents-md-snippet.md)). When invoked that way you'll already be reading this file; just run the workflow. If the agent lacks WebFetch, do Stage 4 with whatever fetch tool it has, or hand verification back to the user.
 
 When the host doesn't have a native question-asking tool, emit a plain text prompt:
 ```
@@ -236,6 +254,6 @@ When the host doesn't have WebFetch (Stage 4 Tier A), tell the user: "Paste sour
 
 ## See also
 
-- [PLAYBOOK.md](./PLAYBOOK.md) — full v2.1 spec · 11 variants · S/M/L scale matrix · 5-anomaly mechanism
+- [PLAYBOOK.md](./PLAYBOOK.md) — full v2.2 spec · 11 variants · S/M/L scale matrix · 5-anomaly mechanism
 - [templates/](./templates/) — copy-paste-ready blocks
-- [CHANGELOG.md](./CHANGELOG.md) — version history (v1 → v2.0 → v2.1 → 三轮 patch)
+- [CHANGELOG.md](./CHANGELOG.md) — version history (v1 → v2.0 → v2.1 → v2.2)

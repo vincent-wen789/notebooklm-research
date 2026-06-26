@@ -6,6 +6,36 @@ Format inspired by [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) but 
 
 ---
 
+## [2.2] · 2026-06-26 · i18n + simple mode
+
+调研发现 skill 对非中文用户实际不可用：所有 example / template 硬编码中文，且模板写死「中文输出」强制 NotebookLM 用中文回。同时缺一个给非技术用户的降级版。本次修复。
+
+### Fixed
+
+- **输出语言强制中文** → SKILL.md 新增「Output language · match the user」硬规则：检测用户语言，所有产出（搜索大纲 / CI / verdict）随之；模板里写死的 `中文输出（…）` 改为 `输出语言：匹配用户的研究语言`（ci-A1 / ci-B1 / PLAYBOOK §10.1/10.2）
+- **README 例子语言对不上** → README.md 的 magic prompt / Stage 2-3 例子块改英文；README.ja.md 改日文（之前都贴的中文块）
+- **install URL / ORP 链接指向旧账号 `wjameswen888`**（已 301 重定向但 stale）→ 全部改 `vincent-wen789`
+
+### Added
+
+- `templates/ci-hard-skeleton.md` 现提供 EN / ZH / JA 三版硬骨架（之前仅中文）
+- `templates/simple-prompt.md` · 给非技术用户的大白话降级版：1 个 prompt、零安装、无变体、无 Tier A/B/C、无 `[#N]` 术语，4 条核心规则，EN / 中文 / 日本語三语
+- SKILL.md 新增「Two modes · full vs simple」：非 power-user 直接走 simple-prompt
+
+### Install reach（除 Claude Code 外的 agent）
+
+之前 installer 号称 4 host 但实际只有 Claude Code 真能用。核实后修正：
+
+- **澄清 Codex 已原生支持**：`SKILL.md` 2025-12 起成跨 agent 开放标准，Codex CLI 原生读 `~/.codex/skills/`——installer 这条路径其实已对，README / SKILL.md / install.sh 据此重写「native skill host」框架（Claude Code + Codex）
+- **新增 rules-based agent 安装路径**：Cursor / Windsurf / GitHub Copilot / Gemini CLI / Aider / Zed 等没有 skill 概念，只读常驻指令文件 → 新增 `templates/agents-md-snippet.md`（往 `AGENTS.md` / `GEMINI.md` 贴一段 pointer，按需读 SKILL.md，几乎不占 context），三个 README 加「其他 agent」安装章节 + 每工具读取文件对照表
+- `install.sh` 新增 `--print-agents-snippet` flag + 头部注释 / 收尾提示更新；host 列表去掉误导性的「Codex fallback path」重复项
+
+### Notes
+
+- "301 字符" 仍指中文版硬骨架；EN / JA 版字符数不同，但语义对齐
+
+---
+
 ## [2.1] · 2026-05-18
 
 ### 三轮 patch（2026-05-18 · 反过度工程 · v2.1 内修不 bump）

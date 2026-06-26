@@ -7,8 +7,8 @@
 > **诚实说**：如果你用 ChatGPT Deep Research 或 Perplexity Pro 已经够爽，你大概不需要这个。那些工具看起来很稳，是因为失败模式不会大声坏掉——你不会看到"这段引用的论文我编的"警告。这个 skill 是给被这种悄悄出错坑过的人用的。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Skill version](https://img.shields.io/badge/skill-v2.1-blue)](./CHANGELOG.md)
-[![Cross-host](https://img.shields.io/badge/装-Claude_Code_%7C_Codex_CLI_%7C_Agents_SDK_%7C_Hermes-7C3AED)](#一次装-四个-host-用)
+[![Skill version](https://img.shields.io/badge/skill-v2.2-blue)](./CHANGELOG.md)
+[![Cross-host](https://img.shields.io/badge/装-Claude_Code_%7C_Codex_%7C_Cursor_%7C_Windsurf_%7C_Copilot_%7C_Gemini-7C3AED)](#安装--原生-skill-hostclaude-code--codex)
 
 ### 差异化在哪
 
@@ -46,6 +46,8 @@ ChatGPT Deep Research 和 Perplexity 有同样的问题，只是被更漂亮的 
    - 自检 section（4 块：未满足 CI / 未找到答案 / 引用频次 top 3 / 内部矛盾）
 ```
 
+> **嫌这 6 条还是太硬核？** [`templates/simple-prompt.md`](./templates/simple-prompt.md) 有个大白话 4 条版（EN / 中文 / 日本語），给非技术用户——没有 `[#N]` 记号、没有术语。上面这块也有 EN / ZH / JA 三版，在 [`templates/ci-hard-skeleton.md`](./templates/ci-hard-skeleton.md)。
+
 效果对比：
 
 - **前**：NotebookLM 输出"目前业内主流方案是 XYZ"，引用糊在一起，事实观点混杂，数字幻觉
@@ -53,22 +55,39 @@ ChatGPT Deep Research 和 Perplexity 有同样的问题，只是被更漂亮的 
 
 这只是 skill 内置 4-stage 工作流的 Stage 2 片段——独立用就能立刻提升 NotebookLM 输出质量。装上 skill 还能拿到：Stage 1 自动选变体（A1 mapping / B1 narrative / C1 compliance 等 11 种）· Stage 4 自动跑 Tier A/B/C 数字反查 · 抓出编造的论文（详情看下面"用起来什么感觉"）。
 
-## 一次装 · 四个 host 用
+## 安装 · 原生 skill host（Claude Code · Codex）
+
+`SKILL.md` 现在是跨 agent 的开放标准。安装脚本自动检测原生读它的 host，symlink 进每个：
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/wjameswen888/notebooklm-research/main/install.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/vincent-wen789/notebooklm-research/main/install.sh)
 ```
 
-安装脚本自动检测你机器上的 AI host 路径，把 skill 装进每个找到的：
-
-- `~/.claude/skills/` · Claude Code CLI
-- `~/.agents/skills/` · Anthropic Agents SDK · OpenAI Codex CLI
-- `~/.codex/skills/` · Codex CLI 备用路径
+- `~/.claude/skills/` · **Claude Code CLI**
+- `~/.codex/skills/` · **OpenAI Codex CLI** — 2025 年 12 月起原生读 `SKILL.md`
+- `~/.agents/skills/` · Anthropic Agents SDK
 - `~/.hermes/skills/` · Hermes
 
 Source-of-truth 在 `~/.local/share/notebooklm-research/` · `git pull` 一次更新所有 host · `./install.sh --uninstall` 干净撤回。
 
-参数：`--dry-run` · `--hosts claude,codex` · `--uninstall` · `--force`
+参数：`--dry-run` · `--hosts claude,codex` · `--uninstall` · `--force` · `--print-agents-snippet`
+
+## 安装 · 其他 agent（Cursor · Windsurf · Copilot · Gemini · Aider …）
+
+这些 agent **没有 skill 概念**——只读一个常驻的指令文件，symlink 一个 `SKILL.md` 进去没用。改成往那个文件里贴一段简短的 *pointer*（agent 按需再读完整 workflow，几乎不占 context）：
+
+```bash
+# 在你的项目里——把 pointer 追加到 AGENTS.md
+sed -n '/^## Deep research/,/Emit all output/p' ~/.local/share/notebooklm-research/templates/agents-md-snippet.md >> ./AGENTS.md
+```
+
+| Agent | 它读的文件 |
+|-------|-----------|
+| Cursor · Windsurf · Aider · Zed · Jules · Amp · Devin · JetBrains Junie · VS Code | 项目 `AGENTS.md` |
+| GitHub Copilot | `.github/copilot-instructions.md`（或 `AGENTS.md`） |
+| Gemini CLI | `GEMINI.md` |
+
+`AGENTS.md` 是 [Linux 基金会托管的开放标准](https://agents.md/)，大多数 agent 都读它——贴一次基本覆盖全栈。完整说明 + 原始 block：[`templates/agents-md-snippet.md`](./templates/agents-md-snippet.md)（或跑 `install.sh --print-agents-snippet`）。
 
 ## 用一句
 
@@ -158,8 +177,8 @@ notebooklm-research/
 ├── README.md             ← 英文主页
 ├── README.zh.md          ← 你正在读
 ├── README.ja.md          ← 日本語
-├── PLAYBOOK.md           ← v2.1 完整 spec（深度参考 · 624 行）
-├── CHANGELOG.md          ← v1 → v2.0 → v2.1 → 三轮 patch
+├── PLAYBOOK.md           ← v2.2 完整 spec（深度参考 · 624 行）
+├── CHANGELOG.md          ← v1 → v2.0 → v2.1 → v2.2
 ├── templates/            ← 模板（CI · verdict · anomaly-log 即贴即用）
 └── LICENSE               ← MIT
 ```
@@ -170,7 +189,7 @@ Personal vault workflow · 半月维护一次 · share as-is。Issue 响应不�
 
 ## 相关项目
 
-[ORP (Obsidian RAG Protocol)](https://github.com/wjameswen888/obsidian-rag-protocol) · ORP 是 vault → AI agent 的 state/memory 协议。本 skill 是 research handoff workflow spec。相邻但解耦。
+[ORP (Obsidian RAG Protocol)](https://github.com/vincent-wen789/obsidian-rag-protocol) · ORP 是 vault → AI agent 的 state/memory 协议。本 skill 是 research handoff workflow spec。相邻但解耦。
 
 ## License
 

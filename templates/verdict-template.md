@@ -11,7 +11,7 @@
 ## Verdict block 模板
 
 ```
-NotebookLM 报告核对 verdict（v2.1）
+NotebookLM 报告核对 verdict（v2.2）
 ═══════════════════════════════════════
 【规模档】 S 小 / M 中 / L 大
 【结构】 来源对照表 ✅/❌  自检 section ✅/❌
