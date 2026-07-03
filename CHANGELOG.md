@@ -20,6 +20,12 @@ Format inspired by [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) but 
 - **SKILL.md i18n 残留**（违反它自己的 output-language 铁律）：中文 fallback 提问、Stage 2 搜索大纲模板、Stage 4 verdict 模板与括注——全部改英文为主 + 「emit in the user's language」
 - **README.ja 中文直译腔**：痛み → 何が問題か、弾薬庫 → ネタ集め、跨法域 → 複数法域、硬骨格 → hard skeleton（必須ルール）、壁時計 → 所要時間、源対照表/源リスト → 出典対照表/出典リスト（templates ja 块同步）
 
+### Arch-lens follow-up（同日 · 第三镜头 DeepSeek 补跑）
+
+- **新增 `scripts/drift_check.py` + GitHub Action**：硬骨架 7 份拷贝 byte 级同步 + zh 301 字符 + 版本号五处一致，每次 push/PR 自动验——把「靠手工核对防漂移」固化成机制（arch 镜头 3 条 important 的共同根因）
+- **install.sh `--print-agents-snippet` 跟随 `NOTEBOOKLM_RESEARCH_HOME`**：自定义安装路径时 pointer 不再指向不存在的默认路径
+- **uninstall 提示手动清 AGENTS.md pointer**；help/snippet 从 heredoc 改 printf（bash 3.2 `$(<<EOF)` parser bug + 无可写 TMPDIR 的环境）
+
 ### Changed（README · 第二轮 persona 冷读驱动）
 
 - Tagline 先说事（"make NotebookLM catch its own hallucinations"），不先甩 "cross-host skill" 术语

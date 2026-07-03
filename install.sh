@@ -38,27 +38,27 @@ HOSTS=(
   "hermes:$HOME/.hermes/skills"
 )
 
-# NOTE: help is a heredoc, not sed-from-$0 — under `bash <(curl …)` $0 is a
-# consumed /dev/fd/NN and cannot be re-read.
+# NOTE: help/snippet use printf, not sed-from-$0 (under `bash <(curl …)` $0 is
+# a consumed /dev/fd/NN) and not heredocs (need a writable TMPDIR; sandboxed
+# shells may not have one).
 print_help() {
-  cat <<'HELP'
-notebooklm-research · cross-host installer
-
-Symlinks the skill into every AI host that reads SKILL.md natively
-(Claude Code, Codex, Agents SDK, Hermes). For rules-based agents
-(Cursor / Windsurf / Copilot / Gemini / Aider) use --print-agents-snippet.
-
-Usage:
-  bash <(curl -fsSL https://raw.githubusercontent.com/vincent-wen789/notebooklm-research/main/install.sh)
-
-Flags:
-  --dry-run                Show what would happen, do not modify anything
-  --force                  Overwrite existing non-symlink target dirs
-  --hosts X,Y              Install only to specific hosts (claude,agents,codex,hermes)
-  --uninstall              Remove all installed symlinks (no network needed)
-  --print-agents-snippet   Print the AGENTS.md pointer block and exit
-  --help                   Show this help
-HELP
+  printf '%s\n' \
+    'notebooklm-research · cross-host installer' \
+    '' \
+    'Symlinks the skill into every AI host that reads SKILL.md natively' \
+    '(Claude Code, Codex, Agents SDK, Hermes). For rules-based agents' \
+    '(Cursor / Windsurf / Copilot / Gemini / Aider) use --print-agents-snippet.' \
+    '' \
+    'Usage:' \
+    '  bash <(curl -fsSL https://raw.githubusercontent.com/vincent-wen789/notebooklm-research/main/install.sh)' \
+    '' \
+    'Flags:' \
+    '  --dry-run                Show what would happen, do not modify anything' \
+    '  --force                  Overwrite existing non-symlink target dirs' \
+    '  --hosts X,Y              Install only to specific hosts (claude,agents,codex,hermes)' \
+    '  --uninstall              Remove all installed symlinks (no network needed)' \
+    '  --print-agents-snippet   Print the AGENTS.md pointer block and exit' \
+    '  --help                   Show this help'
 }
 
 log() { printf '%s\n' "$*"; }
@@ -68,11 +68,20 @@ err() { printf '\033[31m✗\033[0m %s\n' "$*" >&2; }
 
 # For rules-based agents (Cursor / Windsurf / Copilot / Gemini / Aider …): the
 # pointer block to paste into their AGENTS.md / GEMINI.md / rules file.
+# Paths in the block track $INSTALL_ROOT so a custom NOTEBOOKLM_RESEARCH_HOME
+# doesn't emit a pointer at the wrong location.
+_emit_snippet() {
+  printf '%s\n' \
+    '## Deep research (NotebookLM workflow)' \
+    "When the user wants deep research, an industry/competitor mapping, narrative ammunition, a compliance scan, a user-persona profile, or \"a write-up with sources I can trust\" — read and follow \`~/.local/share/notebooklm-research/SKILL.md\` (the full 4-stage workflow). For a quick no-setup version, hand them \`~/.local/share/notebooklm-research/templates/simple-prompt.md\`. Emit all output in the user's language."
+}
+
 print_agents_snippet() {
-  cat <<'SNIPPET'
-## Deep research (NotebookLM workflow)
-When the user wants deep research, an industry/competitor mapping, narrative ammunition, a compliance scan, a user-persona profile, or "a write-up with sources I can trust" — read and follow `~/.local/share/notebooklm-research/SKILL.md` (the full 4-stage workflow). For a quick no-setup version, hand them `~/.local/share/notebooklm-research/templates/simple-prompt.md`. Emit all output in the user's language.
-SNIPPET
+  if [ "$INSTALL_ROOT" = "$HOME/.local/share/notebooklm-research" ]; then
+    _emit_snippet
+  else
+    _emit_snippet | sed "s|~/.local/share/notebooklm-research|$INSTALL_ROOT|g"
+  fi
 }
 
 valid_host_key() {
@@ -212,6 +221,7 @@ uninstall_from_hosts() {
   else
     log "Removed $removed symlink(s)."
   fi
+  log "Pasted the pointer block into any AGENTS.md / GEMINI.md? Remove it manually — this script doesn't touch project files."
 }
 
 # Main

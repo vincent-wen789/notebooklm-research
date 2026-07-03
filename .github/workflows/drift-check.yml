@@ -1,0 +1,12 @@
+name: drift-check
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  drift-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/drift_check.py
+      - run: bash -n install.sh
