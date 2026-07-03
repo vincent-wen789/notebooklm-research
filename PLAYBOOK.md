@@ -1,7 +1,7 @@
 ---
 title: NotebookLM Handoff Playbook
-version: 2.2
-updated: 2026-05-18
+version: 2.3
+updated: 2026-07-04
 license: MIT
 ---
 
@@ -52,7 +52,7 @@ NotebookLM 把这三个 bottleneck 解掉：自带 web search + 大量信源处�
    → 不设 CI，只要来源列表
 
 ②Custom Instructions（永久预设 · NotebookLM 端）
-   → 变体专属框架（§9.1+）+ §9.0 硬骨架（≤500 字符 · CI 上限内）
+   → 变体专属框架（§10.1+）+ §10.0 硬骨架（≤500 字符 · CI 上限内）
 
 ③报告 prompt（来源审完后 · NotebookLM 端）
    → 按 CI 框架走 + 末尾两表（来源对照表 + 自检 section · 字段定义见 §6 启动姿势）
@@ -91,9 +91,9 @@ NotebookLM 把这三个 bottleneck 解掉：自带 web search + 大量信源处�
 
 ---
 
-## § 4. 11 个分析框架变体
+## § 4. 12 个分析框架变体
 
-按任务输出"质感"分 6 大类。每类有专属 Custom Instructions 模板（详见 [§ 9 模板库](#-9-custom-instructions-模板库)）。所有变体共享 [§ 9.0 硬骨架](#-90-硬骨架所有变体必含--500-字符--ci-上限内)（强制 inline citation + 来源对照表 + 防幻觉 + 自检）。
+按任务输出"质感"分 6 大类。每类有专属 Custom Instructions 模板（详见 [§ 10 模板库](#-10-custom-instructions-模板库)）。所有变体共享 [§ 10.0 硬骨架](#-100-硬骨架所有变体必含--500-字符--ci-上限内)（强制 inline citation + 来源对照表 + 防幻觉 + 自检）。
 
 ### A · 认知扩展类（输出 = 知识地图 · 覆盖广浅）
 
@@ -139,7 +139,7 @@ NotebookLM 把这三个 bottleneck 解掉：自带 web search + 大量信源处�
 
 ### 变体模板覆盖度
 
-§ 9 当前完整模板：A1 + B1。其他 9 个变体在首次使用时 ad-hoc 写 CI，**完成后回填到 § 9**——见 § 9 末尾的回填政策。
+§ 10 当前完整模板：A1 + B1。其他 10 个变体在首次使用时 ad-hoc 写 CI，**完成后回填到 § 10**——见 § 10 末尾的回填政策。
 
 ---
 
@@ -155,7 +155,7 @@ NotebookLM 把这三个 bottleneck 解掉：自带 web search + 大量信源处�
 ### 阶段二 · owner 操作 NotebookLM（30min - 2h）
 
 1. 新建 Notebook（命名："{项目} {变体} {时间}"）
-2. Settings → Custom Instructions → 粘 § ② Custom Instructions（含 § 9.0 硬骨架）
+2. Settings → Custom Instructions → 粘 § ② Custom Instructions（含 § 10.0 硬骨架）
 3. Deep Research → 粘 § ① 搜索大纲 → 出来源列表
 4. 审来源（10-20 min · 必跑）：勾掉低质量信源（自媒体二手转发 / 标题党 / 时效过期 / 利益冲突明显）
 5. 主对话框 → 粘 § ③ 报告 prompt → 出报告
@@ -300,7 +300,7 @@ NotebookLM 报告核对 verdict（v2.2）
 - ☐ 长期资产：副本归档到知识库 / 调研目录
 - ☐ 更新 frontmatter + aliases + index + log entry（如使用类似 Obsidian 工作流）
 - ☐ 更新 project memory（如果是项目相关）
-- ☐ **【v2.1 回填硬触发】**：本次变体在 § 9 有完整模板？无 → Claude 当场提炼 ad-hoc CI 成 § 9.{N} 模板回填 + 提交 diff 给 owner，owner ack 才算入库完成（防"主动提议"软触发衰退为 dead code）
+- ☐ **【v2.1 回填硬触发】**：本次变体在 § 10 有完整模板？无 → Claude 当场提炼 ad-hoc CI 成 § 10.{N} 模板回填 + 提交 diff 给 owner，owner ack 才算入库完成（防"主动提议"软触发衰退为 dead code）
 
 ---
 
@@ -344,7 +344,7 @@ NotebookLM 报告核对 verdict（v2.2）
 
 §② Custom Instructions（粘到 Notebook Settings · 永久预设）
 [§ 4 选定变体的角色 + 输出框架 + 报告结构]
-+ § 9.0 硬骨架（≤500 字符 · 直接粘）
++ § 10.0 硬骨架（≤500 字符 · 直接粘）
 
 §③ 报告 prompt（来源审完后粘主对话框）
 基于已收来源生成 [变体名] 报告，严格按 CI 框架走。要求：
@@ -413,8 +413,8 @@ NotebookLM 报告核对 verdict（v2.2）
 | **CI 框架被默默跳过** | NotebookLM 自由发挥 | (v1 无) | **自检 section "未满足 CI" 强制自报** |
 | **缺口黑箱** | owner 不知报告漏了啥 | (v1 无) | **自检 section "未找到答案" 强制 expose** |
 | **复读机引用** | 同 source 同段引用 5 次 | (v1 无) | **自检 section "引用频次 top 3 + 代表段落"（不设硬阈值，防 NotebookLM 稀释凑数）** |
-| **CI 字符爆 10k** | NotebookLM 默默截断 CI | (v1 无) | **§ 9.0 硬骨架瘦身 ≤500 字符，字段定义挪到 §③ 报告 prompt** |
-| **Custom Instructions 太宽** | 报告水 · 没踩点 | 锁死框架 | (v1 同 + § 9.0 兜底) |
+| **CI 字符爆 10k** | NotebookLM 默默截断 CI | (v1 无) | **§ 10.0 硬骨架瘦身 ≤500 字符，字段定义挪到 §③ 报告 prompt** |
+| **Custom Instructions 太宽** | 报告水 · 没踩点 | 锁死框架 | (v1 同 + § 10.0 兜底) |
 | **来源信噪比低** | 自媒体二手转发被收入 | 阶段二审来源 owner 必跑 | (v1 同 + 来源对照表 类型/权威度分级强制) |
 | **重 thoroughness 轻 momentum** | 调研无止境 · 95% 不动笔 | "80% 就停" 原则 | (v1 同) |
 | **报告里有真实名字** | 应用阶段法务 risk | "灵感→模式提取→虚构具象" | (v1 同) |
@@ -443,7 +443,7 @@ NotebookLM 报告核对 verdict（v2.2）
    - 自检 section（4 块：未满足 CI / 未找到答案 / 引用频次 top 3 / 内部矛盾）
 ```
 
-**字符统计**：实际约 320 中文字符（UTF-8 约 960 字节），叠加 B1/E1 等复杂变体框架后仍在 NotebookLM CI 10k 字符上限内有充裕余量。字段定义、类型释义、示例 → 全部放 §③ 报告 prompt（per-task ad-hoc，无字符上限）。
+**字符统计**：实测 301 字符（含标点换行 · 与 templates/ci-hard-skeleton.md 一致），叠加 B1/E1 等复杂变体框架后仍在 NotebookLM CI 10k 字符上限内有充裕余量。字段定义、类型释义、示例 → 全部放 §③ 报告 prompt（per-task ad-hoc，无字符上限）。
 
 ### § 10.1 A1 领域 mapping 模板
 
@@ -575,6 +575,8 @@ A2 / A3 / A4 / B2 / C1 / C2 / C3 / D1 / E1 / F1 当前**无完整模板** ——
 ---
 
 ## § 12. Changelog
+
+> v2.2 起版本记录迁至 repo 根目录 [CHANGELOG.md](./CHANGELOG.md)。本节保留 v2.1 及更早的 spec 内部记录。
 
 ### v2.1（2026-05-15 · 修复对抗性 review 发现的问题 · 二轮 review patch）
 

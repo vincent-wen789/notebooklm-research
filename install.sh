@@ -12,17 +12,11 @@
 # skill concept — they read an always-on instructions file. Install on those by
 # pasting the pointer block from templates/agents-md-snippet.md into their
 # AGENTS.md / GEMINI.md / rules file. Run with --print-agents-snippet to print it.
+# On a machine with no native host this script still succeeds: it clones the
+# source and points you at the snippet route.
 #
 # Usage:
 #   bash <(curl -fsSL https://raw.githubusercontent.com/vincent-wen789/notebooklm-research/main/install.sh)
-#
-# Flags:
-#   --dry-run                Show what would happen, do not modify anything
-#   --force                  Overwrite existing non-symlink target dirs
-#   --hosts X,Y              Install only to specific hosts (e.g., "claude,codex")
-#   --uninstall              Remove all installed symlinks
-#   --print-agents-snippet   Print the AGENTS.md pointer block (for rules-based agents) and exit
-#   --help                   Show this help
 
 set -euo pipefail
 
@@ -44,8 +38,27 @@ HOSTS=(
   "hermes:$HOME/.hermes/skills"
 )
 
+# NOTE: help is a heredoc, not sed-from-$0 — under `bash <(curl …)` $0 is a
+# consumed /dev/fd/NN and cannot be re-read.
 print_help() {
-  sed -n '/^# notebooklm-research/,/^# Flags:/p; /^#   --/p' "$0" | sed 's/^# \{0,1\}//'
+  cat <<'HELP'
+notebooklm-research · cross-host installer
+
+Symlinks the skill into every AI host that reads SKILL.md natively
+(Claude Code, Codex, Agents SDK, Hermes). For rules-based agents
+(Cursor / Windsurf / Copilot / Gemini / Aider) use --print-agents-snippet.
+
+Usage:
+  bash <(curl -fsSL https://raw.githubusercontent.com/vincent-wen789/notebooklm-research/main/install.sh)
+
+Flags:
+  --dry-run                Show what would happen, do not modify anything
+  --force                  Overwrite existing non-symlink target dirs
+  --hosts X,Y              Install only to specific hosts (claude,agents,codex,hermes)
+  --uninstall              Remove all installed symlinks (no network needed)
+  --print-agents-snippet   Print the AGENTS.md pointer block and exit
+  --help                   Show this help
+HELP
 }
 
 log() { printf '%s\n' "$*"; }
@@ -60,6 +73,13 @@ print_agents_snippet() {
 ## Deep research (NotebookLM workflow)
 When the user wants deep research, an industry/competitor mapping, narrative ammunition, a compliance scan, a user-persona profile, or "a write-up with sources I can trust" — read and follow `~/.local/share/notebooklm-research/SKILL.md` (the full 4-stage workflow). For a quick no-setup version, hand them `~/.local/share/notebooklm-research/templates/simple-prompt.md`. Emit all output in the user's language.
 SNIPPET
+}
+
+valid_host_key() {
+  for entry in "${HOSTS[@]}"; do
+    [ "${entry%%:*}" = "$1" ] && return 0
+  done
+  return 1
 }
 
 while [ $# -gt 0 ]; do
@@ -79,16 +99,36 @@ while [ $# -gt 0 ]; do
   shift
 done
 
+# Reject unknown --hosts keys up front (a typo like "--hosts cursor" would
+# otherwise silently match nothing and report "no hosts found").
+if [ -n "$SELECTED_HOSTS" ]; then
+  IFS=',' read -ra _keys <<< "$SELECTED_HOSTS"
+  for k in "${_keys[@]}"; do
+    if ! valid_host_key "$k"; then
+      err "Unknown host key: '$k'. Valid keys: claude, agents, codex, hermes."
+      err "(Cursor / Windsurf / Copilot / Gemini / Aider are rules-based — use --print-agents-snippet instead.)"
+      exit 1
+    fi
+  done
+fi
+
 # Step 1: Locate the source dir
 # Priority:
 #   (a) If $0 is inside a git checkout of this repo, use that.
-#   (b) Otherwise, clone/update $INSTALL_ROOT.
+#   (b) Otherwise, clone/update $INSTALL_ROOT — unless offline mode (uninstall),
+#       which must never need the network.
 locate_source() {
+  local offline="${1:-}"
   local script_dir
   script_dir="$(cd "$(dirname "$0")" 2>/dev/null && pwd)" || script_dir=""
   if [ -n "$script_dir" ] && [ -f "$script_dir/SKILL.md" ] && [ -f "$script_dir/PLAYBOOK.md" ]; then
     SOURCE_DIR="$script_dir"
     log "Using local source at $SOURCE_DIR"
+    return
+  fi
+  if [ "$offline" = "offline" ]; then
+    # Uninstall only needs a path for the final message; never clone/pull here.
+    SOURCE_DIR="$INSTALL_ROOT"
     return
   fi
   # Curl-piped or installed outside the repo. Clone or pull.
@@ -106,9 +146,9 @@ locate_source() {
   SOURCE_DIR="$INSTALL_ROOT"
 }
 
-# Step 2: Detect hosts
+# Step 2: Detect hosts. Fills HOSTS_FOUND; empty is NOT fatal (callers decide).
 detect_hosts() {
-  local found=()
+  HOSTS_FOUND=()
   for entry in "${HOSTS[@]}"; do
     local key="${entry%%:*}"
     local path="${entry#*:}"
@@ -119,19 +159,9 @@ detect_hosts() {
       esac
     fi
     if [ -d "$path" ]; then
-      found+=("$key:$path")
+      HOSTS_FOUND+=("$key:$path")
     fi
   done
-  if [ ${#found[@]} -eq 0 ]; then
-    err "No AI host paths found on this machine."
-    log ""
-    log "Looked for:"
-    for entry in "${HOSTS[@]}"; do log "  - ${entry#*:}"; done
-    log ""
-    log "Install at least one supported host first."
-    exit 1
-  fi
-  HOSTS_FOUND=("${found[@]}")
 }
 
 # Step 3a: Install
@@ -155,6 +185,10 @@ install_to_hosts() {
     fi
     ok "[$key] symlink: $target → $SOURCE_DIR"
   done
+  if [ "$SOURCE_DIR" != "$INSTALL_ROOT" ]; then
+    warn "Hosts symlink to this checkout ($SOURCE_DIR)."
+    warn "If you move or delete it, the skill breaks on every host — re-run the installer afterwards."
+  fi
 }
 
 # Step 3b: Uninstall
@@ -173,7 +207,11 @@ uninstall_from_hosts() {
     fi
   done
   log ""
-  log "Removed $removed symlink(s). Source remains at $SOURCE_DIR (delete manually if you want)."
+  if [ -d "$SOURCE_DIR" ]; then
+    log "Removed $removed symlink(s). Source remains at $SOURCE_DIR (delete manually if you want)."
+  else
+    log "Removed $removed symlink(s)."
+  fi
 }
 
 # Main
@@ -182,11 +220,32 @@ if [ "$PRINT_SNIPPET" -eq 1 ]; then
   exit 0
 fi
 [ "$DRY_RUN" -eq 1 ] && log "DRY RUN — no changes will be made."
+
+if [ "$UNINSTALL" -eq 1 ]; then
+  locate_source offline   # never clone/pull just to uninstall
+  detect_hosts
+  if [ ${#HOSTS_FOUND[@]} -eq 0 ]; then
+    log "No host skill dirs found — nothing to uninstall."
+    exit 0
+  fi
+  uninstall_from_hosts
+  exit 0
+fi
+
 locate_source
 detect_hosts
 
-if [ "$UNINSTALL" -eq 1 ]; then
-  uninstall_from_hosts
+if [ ${#HOSTS_FOUND[@]} -eq 0 ]; then
+  warn "No native skill hosts found (looked for Claude Code / Agents SDK / Codex / Hermes dirs)."
+  log ""
+  log "That's fine if you're on a rules-based agent (Cursor / Windsurf / Copilot / Gemini / Aider):"
+  log "  the source is ready at $SOURCE_DIR — now paste the pointer into your agent's"
+  log "  instructions file (AGENTS.md / GEMINI.md). Print it with:"
+  log "    bash $SOURCE_DIR/install.sh --print-agents-snippet"
+  log "  Details: $SOURCE_DIR/templates/agents-md-snippet.md"
+  log ""
+  log "Expected a native install? Install one of these hosts first, then re-run:"
+  for entry in "${HOSTS[@]}"; do log "  - ${entry#*:}"; done
   exit 0
 fi
 
@@ -200,8 +259,8 @@ log "  /notebooklm-research \"I want a deep research on <topic>\""
 log ""
 log "Using a rules-based agent (Cursor / Windsurf / Copilot / Gemini / Aider …)?"
 log "  Those don't auto-load skills. Paste the pointer into their AGENTS.md / GEMINI.md:"
-log "    $0 --print-agents-snippet"
+log "    bash $SOURCE_DIR/install.sh --print-agents-snippet"
 log "  Details: $SOURCE_DIR/templates/agents-md-snippet.md"
 log ""
 log "Update later:    git -C $SOURCE_DIR pull"
-log "Uninstall:       $0 --uninstall"
+log "Uninstall:       bash $SOURCE_DIR/install.sh --uninstall"

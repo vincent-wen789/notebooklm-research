@@ -2,11 +2,37 @@
 
 All notable changes to this playbook will be documented in this file.
 
-Format inspired by [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) but adapted for SOP-style content.
+Format inspired by [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) but adapted for SOP-style content. Each release opens with an English summary; the detailed notes below it are working records in Chinese.
+
+---
+
+## [2.3] · 2026-07-04 · taxonomy repair + install hardening
+
+**EN summary**: a multi-lens review (correctness + intent lenses, 4 cold-read personas, adversarial verification pass) found the variant taxonomy in SKILL.md/READMEs had drifted from PLAYBOOK § 4 — 8 of 12 codes meant different things, so an agent picking a code at Stage 1 could emit the wrong framework at Stage 3. This release realigns everything to the PLAYBOOK taxonomy (spec-of-record), hardens `install.sh` edge cases, clears the remaining i18n stragglers, and fixes every cross-file numeric inconsistency the review caught.
+
+### Fixed
+
+- **变体编号漂移（运行时会坏）**：SKILL/README 写 C1=合规、D1=时间线、F1=画像，而 PLAYBOOK § 4（及 templates / 历史 CHANGELOG）是 C=决策辅助、D=画像、E=合规、F=时间线。已把 SKILL/README 对齐到 PLAYBOOK 编号；SKILL Stage 1 表格内嵌每个变体的英文输出框架（runtime 不再依赖中文 PLAYBOOK）
+- **「11 个变体」数错了**——实际 12 个码（2 有模板 + 10 雏形）。README ×3 / SKILL.md / PLAYBOOK § 4 标题一并修正
+- **install.sh**：`--uninstall` 不再先 clone/pull（离线可用）；无原生 host 的机器改为 exit 0 + rules-based agent 指引（兑现 README 的「无害」承诺）；未知 `--hosts` key 显式报错；`--help` 与收尾提示不再依赖 `$0`（curl-pipe 下是耗尽的 /dev/fd）；从本地 checkout 安装时警告 symlink 悬空风险
+- **magic prompt 标成「Stage 2 片段」**（实为 Stage 3 硬骨架）——三语 README 修正；根因是 PLAYBOOK ①-④ 编号错位泄漏
+- **PLAYBOOK 陈旧引用**：8 处仍指向旧编号 § 9 的模板库（vault→开源重排后应为 § 10）；「约 320 中文字符」与实测 301 矛盾；§ 12 加指针说明 v2.2+ 记录在本文件
+- **SKILL.md i18n 残留**（违反它自己的 output-language 铁律）：中文 fallback 提问、Stage 2 搜索大纲模板、Stage 4 verdict 模板与括注——全部改英文为主 + 「emit in the user's language」
+- **README.ja 中文直译腔**：痛み → 何が問題か、弾薬庫 → ネタ集め、跨法域 → 複数法域、硬骨格 → hard skeleton（必須ルール）、壁時計 → 所要時間、源対照表/源リスト → 出典対照表/出典リスト（templates ja 块同步）
+
+### Changed（README · 第二轮 persona 冷读驱动）
+
+- Tagline 先说事（"make NotebookLM catch its own hallucinations"），不先甩 "cross-host skill" 术语
+- 新增「What you need」（NotebookLM 链接 / agent / 终端）、「在终端里跑」、装完验证步骤、诚实时间账、NotebookLM 免费层配额小字、对比表加「你的 agent 裸跑」基准行
+- 「4 层防御」改为逐项列出四层；verdict 示例补上 Tier B；硬编码「624 行」删除
+- 「抓 ChatGPT/Perplexity 漏的」收窄到证据支持的范围；「跑了 1 年」改为可由 CHANGELOG 追溯的迭代表述
+- 「人在环里」从括号注释提升为「用起来什么感觉」开头的显式说明
 
 ---
 
 ## [2.2] · 2026-06-26 · i18n + simple mode
+
+**EN summary**: output language now follows the user (was hardcoded Chinese), a plain-language "simple mode" for non-technical users, and real install paths beyond Claude Code (native hosts + rules-based agents via AGENTS.md pointer).
 
 调研发现 skill 对非中文用户实际不可用：所有 example / template 硬编码中文，且模板写死「中文输出」强制 NotebookLM 用中文回。同时缺一个给非技术用户的降级版。本次修复。
 
@@ -43,6 +69,8 @@ Format inspired by [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) but 
 ---
 
 ## [2.1] · 2026-05-18
+
+**EN summary**: tiered Tier A/B/C verification (full WebFetch was infeasible), the 301-char hard skeleton, single-source-of-truth SOP — all driven by three adversarial review rounds.
 
 ### 三轮 patch（2026-05-18 · 反过度工程 · v2.1 内修不 bump）
 
@@ -97,6 +125,8 @@ Format inspired by [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) but 
 
 ## [2.0] · 2026-05-15 (Superseded by 2.1 same day)
 
+**EN summary**: three-stage → four-stage architecture (adds the Claude-side verification SOP); E/F variant families join.
+
 ### Added
 
 - 三段式 → 四段式架构（加 Claude 收尾核对 SOP）
@@ -107,6 +137,8 @@ Format inspired by [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) but 
 ---
 
 ## [1.x] · 2026-04-30 → 2026-05-06
+
+**EN summary**: initial three-stage architecture, the first variant families, and human-sampled verification.
 
 ### Added
 

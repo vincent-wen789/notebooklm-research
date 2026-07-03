@@ -2,7 +2,7 @@
 name: notebooklm-research
 description: Run a 4-stage Claude × NotebookLM deep-research workflow with anti-hallucination guardrails. Use whenever the user wants deep research, competitor mapping, narrative ammunition, compliance scoping, industry decode, user-segment profile, trend study, or a research dossier with citations. Trigger on phrases like "深度调研", "做 mapping", "梳理 X", "弹药库", "竞品分析", "用户画像", "面试情报", "industry decode", "compliance scan", or "comprehensive write-up on X", even without explicit NotebookLM mention. Stages, (1) Deep Research search outline, (2) hard-skeleton Custom Instructions forcing inline [#N] citations + fact/opinion/inference tags + recency markers + 3-tier confidence + self-check, (3) variant-specific full CI to paste into Notebook Settings, (4) Tier A/B/C verification on returned report plus structured verdict. Guards against NotebookLM's three systemic failures, number hallucination, fact-opinion conflation, time-recency drift.
 license: MIT
-version: 2.2
+version: 2.3
 ---
 
 # NotebookLM Research
@@ -47,22 +47,22 @@ These can't be caught by "reading the report carefully" — humans miss things a
 
 Ask the user which variant and scale they want. Use the host's native question mechanism (AskUserQuestion in Claude Code, plain text prompt in Codex / other hosts).
 
-**Variants** (full templates at [templates/](./templates/) and [PLAYBOOK § 10](./PLAYBOOK.md)):
+**Variants** — codes aligned with [PLAYBOOK § 4](./PLAYBOOK.md) (Chinese; the framework column below inlines the same content so you don't need it at runtime). Full templates exist for **A1** and **B1** at [templates/](./templates/):
 
-| Code | Use case | When to pick |
-|------|----------|--------------|
-| **A1** | Industry/company mapping · job search · competitor scan | Most common · default for "mapping of X" |
-| A2 | Tool selection · stack comparison | "which X should I use" |
-| A3 | Region/market mapping | "what's the X scene in Japan" |
-| A4 | People mapping · who's who | "who are the key players in X" |
-| **B1** | Narrative ammunition · story/article research | Creative · narrative-driven |
-| B2 | Counter-narrative · steelman | Debate prep · adversarial framing |
-| **C1** | Compliance scoping · regulation scan | "can I do X legally" |
-| C2 | Standards/spec scoping | Technical compliance |
-| C3 | Policy environment scoping | Political/regulatory context |
-| D1 | Event timeline reconstruction | "what happened with X" · chronological |
-| E1 | Cross-jurisdiction compliance | Multi-region legal scoping |
-| F1 | User segment profile · persona research | Marketing · product fit |
+| Code | Use case | Output framework |
+|------|----------|------------------|
+| **A1** | Domain mapping — industry / company / tool / people scan. Default for "mapping of X" | entity map + 4-dimension scoring + priority ranking |
+| A2 | Concept deep-dive — "help me really understand X" | 5W1H + evolution path + common misconceptions |
+| A3 | Trend scan — "what happened in X these 6 months" | phenomenon + data + drivers + impact + outlook |
+| A4 | Regulation-change tracking · policy environment | timeline + key changes + impact surface + response options |
+| **B1** | Narrative ammunition — story/article research (adapt framing for counter-narrative / steelman) | archetypes + decision chains + psychology arcs + jargon + audience hooks |
+| B2 | Historical retrospective — "what does 1929 teach us about Y" | timeline + key actors + turning points + lessons + modern mapping |
+| C1 | Competitor analysis — "X vs Y" product scan | scored dimension matrix + differentiation + fit-by-scenario + takeaway |
+| C2 | Tech / tool selection — "which X should I use" | performance + usability + ecosystem + trend + team fit |
+| C3 | Pre-interview company intel | fundamentals + culture + interview patterns + salary range + verdict |
+| D1 | User persona & reach — marketing · product fit | segments + pain points + preferences + channels + conversion path |
+| E1 | Compliance scoping — "can I do X legally", incl. cross-jurisdiction | law-layer structure (statute / rules / directives) + liability + risk levels + practical path |
+| F1 | Event timeline reconstruction — "what happened with X" | trigger + timeline + multi-party views + impact spread + follow-ups |
 
 **Scale** (affects Stage 4 verification depth):
 
@@ -80,28 +80,28 @@ Default: **M / A1**. Only ask the user explicitly if their request is clearly S 
 
 Generate the search outline to paste into NotebookLM's **Deep Research** mode. This is **not** the Custom Instructions — Deep Research mode has no CI; it just collects sources.
 
-Output structure:
+Output structure (emit the whole block in the user's language):
 
 ```
-NotebookLM Deep Research · 搜索大纲
+NotebookLM Deep Research · search outline
 
 [Topic + framing in 1-2 sentences]
 
-关键词建议 (bilingual if user context is multilingual):
+Suggested keywords (bilingual if the user's context is multilingual):
   - [primary keywords]
   - [secondary keywords]
   - [adversarial keywords for triangulation]
 
-重点关注:
+Focus on:
   - [list of focal points specific to variant]
 
-范围限制:
-  - 时间窗口: [e.g., 2023-2026 if recency matters]
-  - 信源类型偏好: 一手 > 二手 > 三手
-  - 排除: [e.g., 自媒体复述 / 已知 paywall 重灾区]
+Scope limits:
+  - Time window: [e.g., 2023-2026 if recency matters]
+  - Source-type preference: primary > secondary > tertiary
+  - Exclude: [e.g., re-posted commentary / known paywall-heavy domains]
 
-输出要求 (paste into Deep Research prompt末尾):
-  "返回来源列表 · 含标题 + URL + 发布日期 + 类型 (一手/二手/三手) + 权威度 (高/中/低)"
+Output requirement (paste at the end of the Deep Research prompt):
+  "Return the source list with title + URL + publish date + type (primary/secondary/tertiary) + authority (high/mid/low)"
 ```
 
 Tell the user: "Take this to NotebookLM Deep Research mode. When sources come back, audit them (drop low-quality / off-topic), then come back here for the Custom Instructions."
@@ -114,9 +114,9 @@ After the user audits sources, generate the variant-specific full CI for them to
 
 For variants A1 and B1, the full templates are ready at [`templates/ci-A1-mapping.md`](./templates/ci-A1-mapping.md) and [`templates/ci-B1-narrative.md`](./templates/ci-B1-narrative.md). Read the relevant file and emit the codeblock contents to the user — **translating the whole codeblock (role, output framing, tag words, hard requirements) into the user's language as you emit it**, per the Output-language rule above. The template files are the Chinese reference copy; do not paste Chinese CI to a non-Chinese user.
 
-For other variants (A2-F1), the framework is in [PLAYBOOK § 10.3+](./PLAYBOOK.md). If the template is still a stub, do this:
+For the other 10 variants (A2-F1) no full template exists yet — build the CI ad-hoc (backfill policy: [PLAYBOOK § 10.3](./PLAYBOOK.md), Chinese):
 1. Take the A1 template as base.
-2. Adapt the "core framework" section to the variant (e.g., for C1 compliance: replace "competitor matrix" with "regulatory matrix · 法源 / 主管 / 违反后果").
+2. Adapt the "core framework" section to the variant's output framework from the Stage 1 table (e.g., for E1 compliance: replace the company matrix with a regulatory matrix — law source / regulator / violation consequences).
 3. **Always** append the hard-skeleton from [`templates/ci-hard-skeleton.md`](./templates/ci-hard-skeleton.md) at the end. This is non-negotiable.
 
 Emit:
@@ -149,17 +149,17 @@ When the user returns with the NotebookLM report, run Tier A/B/C verification pe
 
 Verify presence of:
 - Inline `[#N]` citations on facts/numbers/quotes
-- Source reference table (来源对照表) at the end
-- Self-check section (自检 section · 4 blocks)
+- Source reference table at the end (来源对照表 in Chinese reports)
+- Self-check section, 4 blocks (自检 in Chinese reports)
 
 If any are missing, **send the report back to the user**: "Ask NotebookLM to regenerate following the CI — it skipped the citation / source table / self-check." Do not proceed to verification.
 
 ### Step 2 · Tier A · Numbers (100% cross-ref)
 
-Identify every decision-grade number (金额 / 比例 / KPI / 版本号 / 关键日期). For each:
+Identify every decision-grade number (amounts / percentages / KPIs / version numbers / key dates). For each:
 1. Find its `[#N]` reference.
 2. Find the source in the source table.
-3. **WebFetch the source URL** and grep for the exact number (or its quoted context · 原文引述 ≤ 50 字).
+3. **WebFetch the source URL** and grep for the exact number (or its quoted context, the ≤ 50-word source quote).
 4. Mark:
    - ✅ cross-ref OK · number matches source
    - ⚠ cross-ref partial · close but not exact (e.g., "3.1M" vs "3.12M")
@@ -170,42 +170,42 @@ If WebFetch isn't available on the current host, tell the user: "Tier A automati
 
 ### Step 3 · Tier B · Time/dates (30% sample)
 
-Sample 30% of the time markers (`截至 YYYY-MM-DD`). For each sampled, WebFetch the source and verify the date is consistent.
+Sample 30% of the time markers (`as of YYYY-MM-DD`; `截至 YYYY-MM-DD` in Chinese reports). For each sampled, WebFetch the source and verify the date is consistent.
 
 ### Step 4 · Tier C · Named entities (grep)
 
 Extract all named entities (people, companies, products, regulations, paper titles, institutions). For each:
 1. Grep the source table for the entity.
-2. If 0 hits → mark "potentially fabricated · 待核实".
+2. If 0 hits → mark "potentially fabricated · needs manual check".
 3. This catches the "NotebookLM gave me a paper called X by Y from Z institution" hallucination — see [PLAYBOOK § 8 Failure Mode 1](./PLAYBOOK.md) and [templates/ci-hard-skeleton.md](./templates/ci-hard-skeleton.md).
 
 ### Step 5 · Emit structured verdict
 
-Use the template at [`templates/verdict-template.md`](./templates/verdict-template.md). Output:
+Use the template at [`templates/verdict-template.md`](./templates/verdict-template.md) (Chinese reference copy). Emit the verdict in the user's language:
 
 ```
-NotebookLM 报告核对 verdict (v2.2)
+NotebookLM report verification verdict (v2.3)
 
-【规模档】 S / M / L
-【结构】 来源对照表 ✅/❌  自检 section ✅/❌
-【citation 密度】 每千字 N 处 (baseline ≥ 10)
+【scale】 S / M / L
+【structure】 source table ✅/❌  self-check section ✅/❌
+【citation density】 N per 1000 words (baseline ≥ 10)
 
-【Tier A 决策数字】
-  总 N 个 / 成功 cross-ref X / 待修正 Y / fetch 失败 Z
+【Tier A · decision numbers】
+  total N / cross-ref OK X / needs fix Y / fetch failed Z
 
-【Tier B 时间节点】
-  总 N / 抽样 M / 通过 X / 待修正 Y
+【Tier B · time markers】
+  total N / sampled M / pass X / needs fix Y
 
-【Tier C 命名实体】
-  报告 N / 对照表 M / 0-命中 K (待核实)
+【Tier C · named entities】
+  in report N / in source table M / zero-hit K (needs manual check)
 
-【自检 4 块解读】
-  未满足 CI: ...
-  未找到答案: ...
-  引用频次 top 3: ...
-  内部矛盾: ...
+【self-check 4 blocks】
+  unmet CI: ...
+  no answer found: ...
+  top-3 citation frequency: ...
+  internal contradictions: ...
 
-【整体】 ✅ ship / ⚠ 修后 ship / ❌ 退回 NotebookLM 重生成
+【overall】 ✅ ship / ⚠ ship after fixes / ❌ send back to NotebookLM to regenerate
 ```
 
 ### Step 6 · Anomaly detection (5 types)
@@ -234,9 +234,9 @@ Use [`templates/anomaly-log-entry.md`](./templates/anomaly-log-entry.md) as the 
 
 **Rules-based agents** (Cursor / Windsurf / GitHub Copilot / Gemini CLI / Aider / Zed …) have no skill loader — they reach this workflow via a pointer in their `AGENTS.md` / `GEMINI.md` (see [`templates/agents-md-snippet.md`](./templates/agents-md-snippet.md)). When invoked that way you'll already be reading this file; just run the workflow. If the agent lacks WebFetch, do Stage 4 with whatever fetch tool it has, or hand verification back to the user.
 
-When the host doesn't have a native question-asking tool, emit a plain text prompt:
+When the host doesn't have a native question-asking tool, emit a plain text prompt in the user's language, e.g.:
 ```
-请选择变体 (A1-F1) 和规模档 (S/M/L)。默认: A1 / M。
+Pick a variant (A1-F1) and a scale (S/M/L). Default: A1 / M.
 ```
 
 When the host doesn't have WebFetch (Stage 4 Tier A), tell the user: "Paste sources back here for manual verification, or run this skill in Claude Code / Codex which both support WebFetch."
@@ -254,6 +254,6 @@ When the host doesn't have WebFetch (Stage 4 Tier A), tell the user: "Paste sour
 
 ## See also
 
-- [PLAYBOOK.md](./PLAYBOOK.md) — full v2.2 spec · 11 variants · S/M/L scale matrix · 5-anomaly mechanism
+- [PLAYBOOK.md](./PLAYBOOK.md) — full spec (Chinese-only for now) · 12 variants · S/M/L scale matrix · 5-anomaly mechanism
 - [templates/](./templates/) — copy-paste-ready blocks
-- [CHANGELOG.md](./CHANGELOG.md) — version history (v1 → v2.0 → v2.1 → v2.2)
+- [CHANGELOG.md](./CHANGELOG.md) — version history (v1 → v2.3)
